@@ -1,0 +1,39 @@
+syntax = "proto3";//这个版本的protoc的protobuf编译器已经可以支持proto2语法和proto3的语法
+package protobuf;
+
+//RFID采集记录
+message DigestRecord{
+
+//记录标识
+string recordId = 1;
+
+//数据大类型
+string dataCategory = 2;
+
+//数据类型
+string dataType = 3;
+
+//资源ID
+string resourceId = 4;
+
+//来源平台ID
+string sourcePlatformId = 5;
+
+//目标平台ID
+string targetPlatformId = 6;
+
+//数据时间
+int64 eventTime = 7;
+
+//接入时间
+int64 accessTime = 8;
+
+//转出时间
+int64 transmitTime = 9;
+
+}
+
+//RFID采集记录列表
+message DigestRecordList{
+repeated DigestRecord recordList = 1;
+}
