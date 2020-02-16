@@ -4,12 +4,12 @@ import (
 	"github.com/json-iterator/go/extra"
 	"os"
 	"os/signal"
-	"sunset/data-stream/context"
-	"sunset/data-stream/logger"
-	"sunset/data-stream/model"
-	_ "sunset/data-stream/operator"
-	"sunset/data-stream/proxy"
-	"sunset/data-stream/stream"
+	"dyzs/data-flow/context"
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model"
+	_ "dyzs/data-flow/operator"
+	"dyzs/data-flow/proxy"
+	"dyzs/data-flow/stream"
 )
 
 var TASK_FLOW = map[string][]string{

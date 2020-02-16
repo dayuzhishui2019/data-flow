@@ -1,9 +1,9 @@
 package gat1400
 
 import (
-	"sunset/data-stream/model/gat1400/base"
-	protobuf "sunset/data-stream/model/proto/proto_model"
-	"sunset/data-stream/util/times"
+	"dyzs/data-flow/model/gat1400/base"
+	protobuf "dyzs/data-flow/model/proto/proto_model"
+	"dyzs/data-flow/util/times"
 )
 
 type MotorVehicleModel struct {
@@ -106,6 +106,9 @@ type MotorVehicleObject struct {
 	RelatedList         *base.RelatedList  `json:"RelatedList"`         //关联关系实体;
 }
 
+func (item *MotorVehicleObject) GetResourceID() string {
+	return item.DeviceID
+}
 
 func (item *MotorVehicleObject) GetDigest() *protobuf.DigestRecord {
 	shotTime := ""

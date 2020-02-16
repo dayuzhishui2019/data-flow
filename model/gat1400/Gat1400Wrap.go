@@ -1,12 +1,12 @@
 package gat1400
 
 import (
+	"dyzs/data-flow/model/gat1400/base"
+	protobuf "dyzs/data-flow/model/proto/proto_model"
 	"errors"
 	"github.com/golang/protobuf/proto"
 	jsoniter "github.com/json-iterator/go"
 	"io"
-	"sunset/data-stream/model/gat1400/base"
-	protobuf "sunset/data-stream/model/proto/proto_model"
 	"time"
 )
 
@@ -38,6 +38,10 @@ const (
 const GAT1400_TIME_FORMATTER = "20060102150405"
 
 type DigestType int
+
+type ResourceData interface {
+	GetResourceID() string
+}
 
 const (
 	DIGEST_ACCESS    DigestType = 1
@@ -98,6 +102,37 @@ func (wrap *Gat1400Wrap) BuildToJson() ([]byte, error) {
 		return jsoniter.Marshal(wrap.NonMotorVehicleModel)
 	}
 	return nil, errors.New("未知的数据类型：" + wrap.DataType)
+}
+
+func (wrap *Gat1400Wrap) FlatResourceData() []ResourceData {
+	var rds []ResourceData
+	switch wrap.DataType {
+	case GAT1400_FACE:
+		if wrap.FaceModel != nil && wrap.FaceModel.FaceListObject != nil && len(wrap.FaceModel.FaceListObject.FaceObject) > 0 {
+			for _, item := range wrap.FaceModel.FaceListObject.FaceObject {
+				rds = append(rds, item)
+			}
+		}
+	case GAT1400_BODY:
+		if wrap.PersonModel != nil && wrap.PersonModel.PersonListObject != nil && len(wrap.PersonModel.PersonListObject.PersonObject) > 0 {
+			for _, item := range wrap.PersonModel.PersonListObject.PersonObject {
+				rds = append(rds, item)
+			}
+		}
+	case GAT1400_VEHICLE:
+		if wrap.MotorVehicleModel != nil && wrap.MotorVehicleModel.MotorVehicleListObject != nil && len(wrap.MotorVehicleModel.MotorVehicleListObject.MotorVehicleObject) > 0 {
+			for _, item := range wrap.MotorVehicleModel.MotorVehicleListObject.MotorVehicleObject {
+				rds = append(rds, item)
+			}
+		}
+	case GAT1400_NONMOTOR:
+		if wrap.NonMotorVehicleModel != nil && wrap.NonMotorVehicleModel.NonMotorVehicleListObject != nil && len(wrap.NonMotorVehicleModel.NonMotorVehicleListObject.NonMotorVehicleObject) > 0 {
+			for _, item := range wrap.NonMotorVehicleModel.NonMotorVehicleListObject.NonMotorVehicleObject {
+				rds = append(rds, item)
+			}
+		}
+	}
+	return rds
 }
 
 func (wrap *Gat1400Wrap) BuildResponse(code string) *base.Response {

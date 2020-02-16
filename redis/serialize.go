@@ -28,6 +28,10 @@ func Deserialization(byt []byte, ptr interface{}) (err error) {
 		*bytes = byt
 		return
 	}
+	if str, ok := ptr.(*string); ok {
+		*str = string(byt)
+		return
+	}
 	if v := reflect.ValueOf(ptr); v.Kind() == reflect.Ptr {
 		switch p := v.Elem(); p.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

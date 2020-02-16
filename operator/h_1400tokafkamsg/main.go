@@ -5,10 +5,10 @@ import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"reflect"
-	"sunset/data-stream/logger"
-	"sunset/data-stream/model/gat1400"
-	"sunset/data-stream/model/kafka"
-	"sunset/data-stream/stream"
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model/gat1400"
+	"dyzs/data-flow/model/kafka"
+	"dyzs/data-flow/stream"
 )
 
 var _data_topic = "gat1400"

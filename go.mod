@@ -1,4 +1,4 @@
-module sunset/data-stream
+module dyzs/data-flow
 
 go 1.13
 

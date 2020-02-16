@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"sunset/data-stream/logger"
+	"dyzs/data-flow/logger"
 )
 
 func ExecCmd(cmdStr string) (string, error) {

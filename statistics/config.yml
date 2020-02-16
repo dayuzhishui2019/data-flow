@@ -4,6 +4,8 @@ kafkaconsumer_groupId: statistics
 kafkaconsumer_fromEarliestOffset: true
 kafkaconsumer_batchSize: 1000
 kafkaconsumer_batchDelay: 5000
-previewWebsocketPath: /preview
 redis:
   addr: 192.168.100.100:16379
+center:
+  wsPort: 18080
+  wsPath: /exchange/ws/{namespace}/{sid}

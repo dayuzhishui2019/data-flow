@@ -1,9 +1,9 @@
 package gat1400
 
 import (
-	"sunset/data-stream/model/gat1400/base"
-	protobuf "sunset/data-stream/model/proto/proto_model"
-	"sunset/data-stream/util/times"
+	"dyzs/data-flow/model/gat1400/base"
+	protobuf "dyzs/data-flow/model/proto/proto_model"
+	"dyzs/data-flow/util/times"
 )
 
 type NonMotorVehicleModel struct {
@@ -105,6 +105,10 @@ type PersonInfoOfVehicleType struct {
 	IsBackup            int    `json:"IsBackup"`
 	IsGlass             int    `json:"IsGlass"`
 	IsCap               int    `json:"IsCap"`
+}
+
+func (item *NonMotorVehicleObject) GetResourceID() string {
+	return item.DeviceID
 }
 
 func (item *NonMotorVehicleObject) GetDigest() *protobuf.DigestRecord {

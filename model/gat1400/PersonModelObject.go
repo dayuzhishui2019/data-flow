@@ -1,9 +1,9 @@
 package gat1400
 
 import (
-	"sunset/data-stream/model/gat1400/base"
-	protobuf "sunset/data-stream/model/proto/proto_model"
-	"sunset/data-stream/util/times"
+	"dyzs/data-flow/model/gat1400/base"
+	protobuf "dyzs/data-flow/model/proto/proto_model"
+	"dyzs/data-flow/util/times"
 )
 
 type PersonModel struct {
@@ -130,6 +130,10 @@ type PersonObject struct {
 	SubImageList *base.SubImageList `json:"SubImageList"` //图像列表
 	FeatureList  *base.FeatureList  `json:"FeatureList"`  //特征值列表
 	RelatedList  *base.RelatedList  `json:"RelatedList"`  //关联关系实体
+}
+
+func (person *PersonObject) GetResourceID() string {
+	return person.DeviceID
 }
 
 func (item *PersonObject) GetDigest() *protobuf.DigestRecord {

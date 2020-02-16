@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
-	"sunset/data-stream/logger"
-	_ "sunset/data-stream/operator"
-	"sunset/data-stream/stream"
-	"sunset/data-stream/util"
+	"dyzs/data-flow/logger"
+	_ "dyzs/data-flow/operator"
+	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util"
 )
 
 func init() {
