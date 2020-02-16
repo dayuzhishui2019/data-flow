@@ -76,7 +76,7 @@ LOOP:
 			continue
 		}
 		var centerAddr string
-		err := pw.redisClient.StringGet(constants.REDIS_KEY_CENTERADDR, &centerAddr)
+		err := pw.redisClient.StringGet(constants.REDIS_KEY_CENTERHOST, &centerAddr)
 		logger.LOG_INFO("centerAddr:", centerAddr)
 		if err != nil || centerAddr == "" {
 			pw.ws = nil

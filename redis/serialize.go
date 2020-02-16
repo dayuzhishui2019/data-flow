@@ -11,6 +11,9 @@ func Serialization(value interface{}) ([]byte, error) {
 	if bytes, ok := value.([]byte); ok {
 		return bytes, nil
 	}
+	if str, ok := value.(string); ok {
+		return []byte(str), nil
+	}
 
 	switch v := reflect.ValueOf(value); v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
