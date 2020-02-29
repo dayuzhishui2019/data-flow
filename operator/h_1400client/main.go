@@ -3,6 +3,14 @@ package dag_plugin_1400client
 import (
 	"bytes"
 	context2 "context"
+	"dyzs/data-flow/concurrent"
+	"dyzs/data-flow/context"
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model/gat1400"
+	"dyzs/data-flow/model/gat1400/base"
+	"dyzs/data-flow/model/kafka"
+	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util"
 	"errors"
 	"fmt"
 	json "github.com/json-iterator/go"
@@ -12,14 +20,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"dyzs/data-flow/concurrent"
-	"dyzs/data-flow/context"
-	"dyzs/data-flow/logger"
-	"dyzs/data-flow/model/gat1400"
-	"dyzs/data-flow/model/gat1400/base"
-	"dyzs/data-flow/model/kafka"
-	"dyzs/data-flow/stream"
-	"dyzs/data-flow/util"
 	"sync"
 	"time"
 )
@@ -68,7 +68,7 @@ func (c *Gat1400Client) Init(config interface{}) error {
 	if httpPoolsize <= 0 {
 		httpPoolsize = 20
 	}
-	logger.LOG_WARN("------------------ 1400server config ------------------")
+	logger.LOG_WARN("------------------ 1400client config ------------------")
 	logger.LOG_WARN("1400client_platformId : " + targetPlatformId)
 	logger.LOG_WARN("1400client_userIdentify : " + userIdentify)
 	logger.LOG_WARN("1400client_viewLibAddr : " + viewLibAddr)
@@ -379,7 +379,7 @@ func (c *Gat1400Client) Handle(data interface{}, next func(interface{}) error) e
 	for _, w := range wraps {
 		func(wrap *gat1400.Gat1400Wrap) {
 			tasks = append(tasks, func() {
-				util.Retry(func() error {
+				err := util.Retry(func() error {
 					json, err := wrap.BuildToJson()
 					if err != nil {
 						return err
@@ -424,6 +424,9 @@ func (c *Gat1400Client) Handle(data interface{}, next func(interface{}) error) e
 					}
 					return errors.New("发送失败：" + string(resBody))
 				}, 3, time.Second*3)
+				if err != nil {
+					logger.LOG_WARN(err)
+				}
 			})
 		}(w)
 	}

@@ -14,20 +14,23 @@ import (
 
 var TASK_FLOW = map[string][]string{
 	"1400server": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
+	"1": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
 	"1400client": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
+	"2": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
 	"statistics": []string{"kafkaconsumer", "1400digesttoredis"},
 	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg",},
 }
 
 func main() {
 
-	//initStatistics()
 
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))
 	context.Set("$logLevel", os.Getenv("LOG_LEVEL"))
 
 	logger.Init()
+
+	context.Init()
 
 	//json模糊匹配
 	extra.RegisterFuzzyDecoders()
@@ -87,4 +90,16 @@ func initStatistics() {
 	context.Set("kafkaconsumer_batchSize", os.Getenv("BATCH_SIZE"))
 	context.Set("kafkaconsumer_batchDelay", os.Getenv("BATCH_DELAY"))
 	context.Set("1400digesttoredis_redisAddr", os.Getenv("REDIS_ADDR"))
+}
+
+
+func init1400server() {
+	context.Set("$task", &model.Task{
+		AccessType: "1400servertest",
+	})
+	context.Set("1400server_viewLibId", "11223344556677889900")
+	context.Set("1400server_serverPort", "14000")
+	context.Set("1400server_openAuth", false)
+	context.Set("1400server_username", "")
+	context.Set("1400server_password", "")
 }

@@ -58,6 +58,7 @@ func Init(ctx *gin.Context) {
 	}
 	config := task.AccessParam
 	configMap := make(map[string]interface{})
+	logger.LOG_WARN("任务配置参数：", config)
 	if config != "" {
 		err = jsoniter.Unmarshal([]byte(config), &configMap)
 		if err != nil {

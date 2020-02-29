@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/viper"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -55,6 +56,7 @@ type PreviewWebsocket struct {
 func (pw *PreviewWebsocket) Run(handle func([]string, []string)) {
 	pw.redisClient = redis.NewRedisCache(0, viper.GetString("redis.addr"), redis.FOREVER)
 	pw.handle = handle
+	//handle([]string{"610125287514449048597855",},nil)
 	go pw.initWebsocket()
 	go pw.previewData()
 }
@@ -95,8 +97,8 @@ LOOP:
 		logger.LOG_INFO("wsPath:", wsPath)
 		wsPath = strings.ReplaceAll(strings.ReplaceAll(wsPath, "{namespace}", _WS_NAMESPACE), "{sid}", boxId)
 		logger.LOG_INFO("wsPath decode:", wsPath)
-		//u := url.URL{Scheme: "ws", Host: centerAddr + ":" + wsPort, Path: wsPath}
-		ws, _, err = websocket.DefaultDialer.Dial("ws://192.168.100.1:7070/ws", nil)
+		u := url.URL{Scheme: "ws", Host: centerAddr + ":" + wsPort, Path: wsPath}
+		ws, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
 		pw.wsLock.Lock()
 		if err != nil {
 			logger.LOG_WARN(err)
@@ -130,7 +132,7 @@ LOOP:
 				logger.LOG_WARN(err)
 				continue
 			}
-			if len(data.Subscribe) == 0 || len(data.UnSubscribe) == 0 {
+			if len(data.Subscribe) == 0 && len(data.UnSubscribe) == 0 {
 				continue
 			}
 			pw.handle(data.Subscribe, data.UnSubscribe)
@@ -168,12 +170,19 @@ func (pw *PreviewWebsocket) previewData() {
 					})
 				}
 			}
-			err := pw.ws.WriteJSON(wsMsgs)
-			if err != nil {
-				logger.LOG_WARN("发送预览数据失败：", err)
-				pw.wsLock.Lock()
-				pw.ws = nil
-				pw.wsLock.Unlock()
+			for _, wm := range wsMsgs {
+				msgStr, _ := jsoniter.Marshal(wm)
+				//logger.LOG_INFO("发送数据" + string(msgStr))
+				err := pw.ws.WriteMessage(websocket.TextMessage, msgStr)
+				if err != nil {
+					logger.LOG_WARN("发送预览数据失败：", err)
+					pw.wsLock.Lock()
+					pw.ws = nil
+					pw.wsLock.Unlock()
+					break
+				} else {
+					logger.LOG_INFO("发送预览数据成功")
+				}
 			}
 		}
 	}

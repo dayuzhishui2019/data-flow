@@ -2,6 +2,7 @@ package h_datatowebsocket
 
 import (
 	context2 "context"
+	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/model/kafka"
 	"dyzs/data-flow/stream"
@@ -44,9 +45,11 @@ func (h *HubmsgWebSocket) Init(config interface{}) error {
 	h.previewWs.Run(func(subscribe []string, unSubscribe []string) {
 		h.resourceLock.Lock()
 		for _, s := range subscribe {
+			logger.LOG_INFO("新增预览：",s)
 			h.resourceMap[s] = true
 		}
 		for _, us := range unSubscribe {
+			logger.LOG_INFO("移除预览：",us)
 			delete(h.resourceMap, us)
 		}
 		h.resourceLock.Unlock()
