@@ -1,12 +1,12 @@
 package proxy
 
 import (
-	"github.com/gin-gonic/gin"
-	jsoniter "github.com/json-iterator/go"
-	"net/http"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model"
+	"github.com/gin-gonic/gin"
+	jsoniter "github.com/json-iterator/go"
+	"net/http"
 )
 
 const (
@@ -22,6 +22,7 @@ func StartManagerProxy(port string) {
 	router.Handle(http.MethodPost, "/init", Init)
 	router.Handle(http.MethodPost, "/heart", KeepAlive)
 	router.Handle(http.MethodPost, "/assignResource", AssignResource)
+	router.Handle(http.MethodPost, "/revokeResource", RevokeResource)
 	go server.Run(":" + port)
 	//go server.Run(":7777")
 }
@@ -88,5 +89,19 @@ func AssignResource(ctx *gin.Context) {
 		return
 	}
 	context.AssignResources(resources)
+	response(ctx, http.StatusOK, nil)
+}
+
+//移除资源
+func RevokeResource(ctx *gin.Context) {
+	var err error
+	resources := make([]string, 0)
+	err = ctx.BindJSON(&resources)
+	if err != nil {
+		logger.LOG_WARN("配置参数解析失败", err)
+		response(ctx, http.StatusBadRequest, err)
+		return
+	}
+	context.RevokeResources(resources)
 	response(ctx, http.StatusOK, nil)
 }
