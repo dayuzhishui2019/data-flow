@@ -73,18 +73,8 @@ type ResponseStatusObject struct {
 	StatusString string `json:"StatusString"`
 }
 
-func BuildSingleRespnse(obj *ResponseStatusSingleObj) *Response {
 
-	var responseStatusObj []*ResponseStatusObject
-	responseStatusObj = append(responseStatusObj, obj.ResponseStatusObject)
-	return &Response{
-		ResponseStatusListObject: &ResponseStatusListObject{
-			ResponseStatusObject: responseStatusObj,
-		},
-	}
-}
-
-func BuildRespnseObject(url string, recordId string, code string) *ResponseStatusObject {
+func BuildResponseObject(url string, recordId string, code string) *ResponseStatusObject {
 	return &ResponseStatusObject{
 		ID:           recordId,
 		LocalTime:    times.Time2StrF(time.Now(), "20060102150405"),
@@ -101,6 +91,13 @@ func BuildRespnse(objs ...*ResponseStatusObject) *Response {
 		},
 	}
 }
+
+func BuildSingleResponse(obj *ResponseStatusObject) *ResponseStatusSingleObj {
+	return &ResponseStatusSingleObj{
+		ResponseStatusObject: obj,
+	}
+}
+
 
 func DecodeBytesToReponse(bytes []byte) (*Response, error) {
 	res := &Response{}

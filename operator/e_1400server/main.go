@@ -2,6 +2,12 @@ package e_1400server
 
 import (
 	context2 "context"
+	"dyzs/data-flow/context"
+	"dyzs/data-flow/logger"
+	gat1400_model "dyzs/data-flow/model/gat1400"
+	"dyzs/data-flow/model/gat1400/base"
+	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -11,12 +17,6 @@ import (
 	"net/textproto"
 	"strconv"
 	"strings"
-	"dyzs/data-flow/context"
-	"dyzs/data-flow/logger"
-	gat1400_model "dyzs/data-flow/model/gat1400"
-	"dyzs/data-flow/model/gat1400/base"
-	"dyzs/data-flow/stream"
-	"dyzs/data-flow/util"
 	"sync"
 	"time"
 )
@@ -129,6 +129,66 @@ func (s *Gat1400Server) InitHttpServer() {
 	engine.POST(base.URL_NOMOTORS, func(c *gin.Context) {
 		s.receive(gat1400_model.GAT1400_NONMOTOR, c)
 	})
+	//图像
+	engine.POST(base.URL_IMAGE, func(c *gin.Context) {
+		rm := &gat1400_model.ImageObject{}
+		err := jsoniter.NewDecoder(c.Request.Body).Decode(rm)
+		if err != nil {
+			c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_IMAGE, "", base.JSON_FORMAT_INVALID)))
+			return
+		}
+		objs := make([]*base.ResponseStatusObject, 0)
+		if len(rm.ImageListObject.Image) > 0 {
+			for _, item := range rm.ImageListObject.Image {
+				objs = append(objs, base.BuildResponseObject(base.URL_IMAGE, item.ImageInfo.ImageID, base.OK))
+			}
+		}
+		c.JSON(http.StatusOK, base.BuildRespnse(objs...))
+	})
+	//图像数据
+	engine.POST(base.URL_IMAGE+"/:id/Data", func(c *gin.Context) {
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(c.Request.RequestURI, c.Param("id"), base.OK)))
+	})
+	//视频
+	engine.POST(base.URL_VIDEOSLICE, func(c *gin.Context) {
+		rm := &gat1400_model.VideoSliceObject{}
+		err := jsoniter.NewDecoder(c.Request.Body).Decode(rm)
+		if err != nil {
+			c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_VIDEOSLICE, "", base.JSON_FORMAT_INVALID)))
+			return
+		}
+		objs := make([]*base.ResponseStatusObject, 0)
+		if len(rm.VideoSliceListObject.VideoSlice) > 0 {
+			for _, item := range rm.VideoSliceListObject.VideoSlice {
+				objs = append(objs, base.BuildResponseObject(base.URL_VIDEOSLICE, item.VideoSliceInfo.VideoID, base.OK))
+			}
+		}
+		c.JSON(http.StatusOK, base.BuildRespnse(objs...))
+	})
+	//视频数据
+	engine.POST(base.URL_VIDEOSLICE+"/:id/Data", func(c *gin.Context) {
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(c.Request.RequestURI, c.Param("id"), base.OK)))
+	})
+	//文件
+	engine.POST(base.URL_FILE, func(c *gin.Context) {
+		rm := &gat1400_model.FileObject{}
+		err := jsoniter.NewDecoder(c.Request.Body).Decode(rm)
+		if err != nil {
+			c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_FILE, "", base.JSON_FORMAT_INVALID)))
+			return
+		}
+		objs := make([]*base.ResponseStatusObject, 0)
+		if len(rm.FileListObject.File) > 0 {
+			for _, item := range rm.FileListObject.File {
+				objs = append(objs, base.BuildResponseObject(base.URL_FILE, item.FileInfo.FileID, base.OK))
+			}
+		}
+		c.JSON(http.StatusOK, base.BuildRespnse(objs...))
+	})
+	//文件数据
+	engine.POST(base.URL_FILE+"/:id/Data", func(c *gin.Context) {
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(c.Request.RequestURI, c.Param("id"), base.OK)))
+	})
 
 	server := &http.Server{
 		Handler: engine,
@@ -162,16 +222,16 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 	rm := &gat1400_model.RegisterModel{}
 	err = jsoniter.NewDecoder(c.Request.Body).Decode(rm)
 	if err != nil {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, "", base.JSON_FORMAT_INVALID)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, "", base.JSON_FORMAT_INVALID)))
 		return
 	}
 	viewID := rm.GetViewID() //视图库id & 设备id
 	if viewID == "" {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.VIEWID_IS_NULL)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.VIEWID_IS_NULL)))
 		return
 	}
 	if viewID != s.viewLibId && !context.ExsitGbId(viewID) {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.DEVICEID_IS_NOT_EXIST)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.DEVICEID_IS_NOT_EXIST)))
 		return
 	}
 	//header params
@@ -182,7 +242,7 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 		authorization = fmt.Sprintf(`Digest realm='myrealm',qop='auth',nonce='%s'`, nonce)
 		mh := textproto.MIMEHeader(c.Writer.Header())
 		mh["WWW-Authenticate"] = []string{authorization}
-		c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.VIEWID_IS_NULL)))
+		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.VIEWID_IS_NULL)))
 		return
 	}
 
@@ -207,13 +267,13 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 		"nc"}
 	for _, k := range keys {
 		if params[k] == "" {
-			c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.INVALID_OPERATION)))
+			c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.INVALID_OPERATION)))
 			return
 		}
 	}
 	password := s.password
 	if password == "" {
-		c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.PASSWORD_IS_NULL)))
+		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.PASSWORD_IS_NULL)))
 		return
 	}
 	//check auth
@@ -228,7 +288,7 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 	logger.LOG_INFO("注册response:", res)
 	logger.LOG_INFO("收到的response:", params["response"])
 	if res != params["response"] {
-		c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.RESPONSE_NOT_CORRECT)))
+		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.RESPONSE_NOT_CORRECT)))
 		return
 	}
 	//注册成功
@@ -240,7 +300,7 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 		KeepaliveTime: time.Now(),
 	}
 	s.Unlock()
-	c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewID, base.OK)))
+	c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.OK)))
 }
 
 /**
@@ -251,51 +311,31 @@ func (s *Gat1400Server) keepalive(c *gin.Context) {
 	km := &gat1400_model.KeepaliveModel{}
 	err = jsoniter.NewDecoder(c.Request.Body).Decode(km)
 	if err != nil {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, "", base.JSON_FORMAT_INVALID)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_KEEPALIVE, "", base.JSON_FORMAT_INVALID)))
 		return
 	}
 	viewLibId := km.GetViewID()
 	if viewLibId == "" {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.VIEWID_IS_NULL)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_KEEPALIVE, viewLibId, base.VIEWID_IS_NULL)))
 		return
 	}
 	s.Lock()
 	defer s.Unlock()
 	r, ok := s.registers[viewLibId]
 	if r == nil || !ok {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.INVALID_OPERATION)))
+		c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_KEEPALIVE, viewLibId, base.INVALID_OPERATION)))
 		return
 	}
 	r.KeepaliveTime = time.Now()
-	c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.OK)))
+	c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_KEEPALIVE, viewLibId, base.OK)))
 	return
 }
 
 /**
- * 保活
+ * 校时
  */
 func (s *Gat1400Server) time(c *gin.Context) {
-	var err error
-	km := &gat1400_model.KeepaliveModel{}
-	err = jsoniter.NewDecoder(c.Request.Body).Decode(km)
-	if err != nil {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, "", base.JSON_FORMAT_INVALID)))
-		return
-	}
-	viewLibId := km.GetViewID()
-	if viewLibId == "" {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.VIEWID_IS_NULL)))
-		return
-	}
-	s.Lock()
-	defer s.Unlock()
-	r, ok := s.registers[viewLibId]
-	if r == nil || !ok {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.INVALID_OPERATION)))
-		return
-	}
-	r.KeepaliveTime = time.Now()
-	c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_KEEPALIVE, viewLibId, base.OK)))
+	c.JSON(http.StatusOK, BuildSystemTime())
 	return
 }
 
@@ -306,24 +346,24 @@ func (s *Gat1400Server) receive(dataType string, c *gin.Context) {
 	start := time.Now()
 	viewLibId := c.GetHeader("User-Identify")
 	if viewLibId == "" {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_FACES, "", base.VIEWID_IS_NULL)))
+		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_FACES, "", base.VIEWID_IS_NULL)))
 		return
 	}
 	//校验视图库id或设备id是否合法
 	if viewLibId != s.viewLibId && !context.ExsitGbId(viewLibId) {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewLibId, base.UNAUTHORIZED)))
+		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_REGIST, viewLibId, base.UNAUTHORIZED)))
 		return
 	}
 	//校验认证session
 	if s.openAuth {
 		if _, ok := s.registers[viewLibId]; !ok {
-			c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildRespnseObject(base.URL_REGIST, viewLibId, base.UNAUTHORIZED)))
+			c.JSON(http.StatusUnauthorized, base.BuildRespnse(base.BuildResponseObject(base.URL_REGIST, viewLibId, base.UNAUTHORIZED)))
 			return
 		}
 	}
 	wrap, err := gat1400_model.BuildFromJson(dataType, c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildRespnseObject(base.URL_FACES, "", base.JSON_FORMAT_INVALID)))
+		c.JSON(http.StatusOK, base.BuildRespnse(base.BuildResponseObject(base.URL_FACES, "", base.JSON_FORMAT_INVALID)))
 		return
 	}
 	logger.LOG_WARN("receive 耗时：" + time.Since(start).String())
