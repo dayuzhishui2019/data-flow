@@ -152,7 +152,7 @@ func RevokeResources(ids []string) {
 			if ok && eq != nil {
 				delete(RESOURCE_GBID_EQ, eq.GbID)
 			}
-			delete(RESOURCE_ID_EQ, eq.ID)
+			delete(RESOURCE_ID_EQ, id)
 		}
 		logger.LOG_WARN("共移除资源 ===>", len(ids))
 		logger.LOG_WARN("当前资源 ===>", len(RESOURCE_ID_EQ))

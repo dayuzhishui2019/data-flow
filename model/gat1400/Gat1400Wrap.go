@@ -140,19 +140,19 @@ func (wrap *Gat1400Wrap) BuildResponse(code string) *base.Response {
 	switch wrap.DataType {
 	case GAT1400_FACE:
 		for _, item := range wrap.FaceModel.FaceListObject.FaceObject {
-			status = append(status, base.BuildRespnseObject(base.URL_FACES, item.FaceID, code))
+			status = append(status, base.BuildResponseObject(base.URL_FACES, item.FaceID, code))
 		}
 	case GAT1400_BODY:
 		for _, item := range wrap.PersonModel.PersonListObject.PersonObject {
-			status = append(status, base.BuildRespnseObject(base.URL_FACES, item.PersonID, code))
+			status = append(status, base.BuildResponseObject(base.URL_FACES, item.PersonID, code))
 		}
 	case GAT1400_VEHICLE:
 		for _, item := range wrap.MotorVehicleModel.MotorVehicleListObject.MotorVehicleObject {
-			status = append(status, base.BuildRespnseObject(base.URL_FACES, item.MotorVehicleID, code))
+			status = append(status, base.BuildResponseObject(base.URL_FACES, item.MotorVehicleID, code))
 		}
 	case GAT1400_NONMOTOR:
 		for _, item := range wrap.NonMotorVehicleModel.NonMotorVehicleListObject.NonMotorVehicleObject {
-			status = append(status, base.BuildRespnseObject(base.URL_FACES, item.NonMotorVehicleID, code))
+			status = append(status, base.BuildResponseObject(base.URL_FACES, item.NonMotorVehicleID, code))
 		}
 	}
 	return base.BuildRespnse(status...)
