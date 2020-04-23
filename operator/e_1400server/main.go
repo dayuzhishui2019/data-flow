@@ -271,9 +271,8 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 			return
 		}
 	}
-	password := s.password
-	if password == "" {
-		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.PASSWORD_IS_NULL)))
+	if params["username"]  != s.username {
+		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.INVALID_OPERATION)))
 		return
 	}
 	//check auth
