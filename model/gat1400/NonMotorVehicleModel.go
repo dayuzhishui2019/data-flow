@@ -30,7 +30,7 @@ type NonMotorVehicleObject struct {
 	BreakRuleMode     string                      `json:"BreakRuleMode"`     //违章类型
 	PersonInfoList    PersonInfoOfVehicleTypeList `json:"PersonInfoList"`    //人体属性信息
 	CyclingType       int                         `json:"CyclingType"`       //骑车类型
-	IsModified        bool                        `json:"IsModified"`        //改装标志
+	IsModified        string                        `json:"IsModified"`        //改装标志
 
 	InfoKind            string             `json:"InfoKind"`            //信息分类 -备注：人工采集还是自动采集 R -
 	SourceID            string             `json:"SourceID"`            //来源标识 -备注：来源图像标识 R -必选
@@ -48,9 +48,9 @@ type NonMotorVehicleObject struct {
 	PlateNo             string             `json:"PlateNo"`             //车牌号;
 	PlateNoAttach       string             `json:"PlateNoAttach"`       //挂车牌号;
 	PlateDescribe       string             `json:"PlateDescribe"`       //车牌描述;
-	IsDecked            bool               `json:"IsDecked"`            //是否套牌;
-	IsAltered           bool               `json:"IsAltered"`           //是否涂改;
-	IsCovered           bool               `json:"IsCovered"`           //是否遮挡;
+	IsDecked            string               `json:"IsDecked"`            //是否套牌;
+	IsAltered           string               `json:"IsAltered"`           //是否涂改;
+	IsCovered           string               `json:"IsCovered"`           //是否遮挡;
 	Speed               float64            `json:"Speed"`               //行驶速度;
 	DrivingStatusCode   string             `json:"DrivingStatusCode"`   //行驶状态代码;
 	UsingPropertiesCode int                `json:"UsingPropertiesCode"` //车辆使用性质代码;
