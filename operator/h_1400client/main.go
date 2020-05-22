@@ -35,6 +35,8 @@ var SEND_DATA_URLS = map[string]string{
 	gat1400.GAT1400_NONMOTOR: base.URL_NOMOTORS,
 }
 
+var ERR_CDX = errors.New("1400重定向")
+
 type Gat1400Client struct {
 	sync.Mutex
 
@@ -109,6 +111,9 @@ func (c *Gat1400Client) Init(config interface{}) error {
 			IdleConnTimeout:     60 * time.Second, //空闲连接在连接池中的超时时间
 		},
 		Timeout: 5 * time.Second,
+		CheckRedirect:func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 	c.ctx, c.cancel = context2.WithCancel(context2.Background())
 
@@ -142,6 +147,9 @@ func (c *Gat1400Client) mustRegist() {
 		}
 		err := c.regist()
 		if err != nil {
+			if err==ERR_CDX{
+				continue
+			}
 			logger.LOG_ERROR("注册失败：", err)
 			time.Sleep(3 * time.Second)
 			//注册失败时，将重定向地址重置
@@ -186,12 +194,12 @@ func (c *Gat1400Client) regist() error {
 			return errors.New("重定向地址为空")
 		}
 		logger.LOG_INFO("重定向地址为： ", location)
-		uri := strings.Split(strings.Trim(strings.ReplaceAll(location, "http://", ""), ""), ":")
+		uri := strings.Split(strings.Trim(strings.ReplaceAll(location, "http://", ""), " "), ":")
 		if len(uri) != 2 {
 			return errors.New("重定向地址错误:" + location)
 		}
 		c.locationViewLibAddr = uri[0] + ":" + uri[1]
-		return errors.New("已重定向，向新地址重新注册")
+		return ERR_CDX
 	}
 	if res.StatusCode != http.StatusUnauthorized {
 		//注册失败
