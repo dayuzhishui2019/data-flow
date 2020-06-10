@@ -1,30 +1,36 @@
 package stream
 
 import (
+	"dyzs/data-flow/logger"
 	"errors"
 	"strconv"
-	"dyzs/data-flow/logger"
 	"time"
 )
 
-var emitter_map = make(map[string]Emitter)
-var handler_map = make(map[string]Handler)
+var emitter_map = make(map[string]func() Emitter)
+var handler_map = make(map[string]func() Handler)
 
-func RegistEmitter(name string, e Emitter) {
-	emitter_map[name] = e
+func RegistEmitter(name string, ef func() Emitter) {
+	emitter_map[name] = ef
 }
-func RegistHandler(name string, h Handler) {
-	handler_map[name] = h
+func RegistHandler(name string, hf func() Handler) {
+	handler_map[name] = hf
 }
 
-func GetEmitter(name string) (emitter Emitter, exsit bool) {
+func GetEmitter(name string) (emitter Emitter, err error) {
 	a, b := emitter_map[name]
-	return a, b
+	if !b {
+		return nil, errors.New("未注册的Emitter:" + name)
+	}
+	return a(), nil
 }
 
-func GetHandler(name string) (handler Handler, exsit bool) {
+func GetHandler(name string) (handler Handler, err error) {
 	a, b := handler_map[name]
-	return a, b
+	if !b {
+		return nil, errors.New("未注册的Handler:" + name)
+	}
+	return a(), nil
 }
 
 type Emitter interface {
@@ -79,16 +85,14 @@ func Build(flow []string) (s *Stream, err error) {
 
 	for i, name := range flow {
 		if i == 0 {
-			e, ok := GetEmitter(name)
-			if !ok {
-				err := errors.New("未注册的Emitter:" + name)
+			e, err := GetEmitter(name)
+			if err != nil {
 				return nil, err
 			}
 			emitter = e
 		} else {
-			h, ok := GetHandler(name)
-			if !ok {
-				err := errors.New("未注册的Handler:" + name)
+			h, err := GetHandler(name)
+			if err != nil {
 				return nil, err
 			}
 			handlers = append(handlers, h)

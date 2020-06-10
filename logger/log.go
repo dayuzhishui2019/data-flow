@@ -22,7 +22,7 @@ var _logLevelMap = map[string]log.Level{
 
 func Init() {
 
-	level := log.InfoLevel
+	level := log.DebugLevel
 	configLogLevel := viper.GetString("$logLevel")
 	if configLogLevel != "" {
 		l, ok := _logLevelMap[strings.ToLower(configLogLevel)]
@@ -102,6 +102,26 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func IsDebug() bool {
+	return log.GetLevel() == log.DebugLevel
+}
+
+func ChangeLevel(level string) {
+	level = strings.ToLower(level)
+	switch level {
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	}
 }
 
 func LOG_DEBUG(vars ...interface{}) {

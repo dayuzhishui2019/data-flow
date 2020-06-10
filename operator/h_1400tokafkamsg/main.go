@@ -1,22 +1,24 @@
 package h_1400tokafkamsg
 
 import (
-	"errors"
-	"fmt"
-	jsoniter "github.com/json-iterator/go"
-	"reflect"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/model/kafka"
 	"dyzs/data-flow/stream"
+	"errors"
+	"fmt"
+	jsoniter "github.com/json-iterator/go"
+	"reflect"
 )
 
 var _data_topic = "gat1400"
 
 func init() {
-	stream.RegistHandler("1400tokafkamsg", &stream.HandlerWrapper{
-		InitFunc:   Init,
-		HandleFunc: Handle,
+	stream.RegistHandler("1400tokafkamsg", func() stream.Handler {
+		return &stream.HandlerWrapper{
+			InitFunc:   Init,
+			HandleFunc: Handle,
+		}
 	})
 }
 

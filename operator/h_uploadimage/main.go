@@ -2,13 +2,6 @@ package h_uploadimage
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
-	"reflect"
-	"strconv"
 	"dyzs/data-flow/concurrent"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
@@ -18,12 +11,21 @@ import (
 	"dyzs/data-flow/util"
 	"dyzs/data-flow/util/base64"
 	"dyzs/data-flow/util/uuid"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
+	"reflect"
+	"strconv"
 	"sync"
 	"time"
 )
 
 func init() {
-	stream.RegistHandler("uploadimage", &ImageUploader{})
+	stream.RegistHandler("uploadimage", func() stream.Handler {
+		return &ImageUploader{}
+	})
 }
 
 type ImageUploader struct {
@@ -39,7 +41,7 @@ func (iu *ImageUploader) Init(config interface{}) error {
 		capacity = configCapacity
 	}
 	host := context.GetString("$host")
-	if host==""{
+	if host == "" {
 		host = "gofastdfs"
 	}
 	imageServerAddr := host + ":8080"

@@ -13,7 +13,9 @@ import (
 )
 
 func init() {
-	stream.RegistHandler("datatowebsocket", &HubmsgWebSocket{})
+	stream.RegistHandler("datatowebsocket", func() stream.Handler {
+		return &HubmsgWebSocket{}
+	})
 }
 
 type HubmsgWebSocket struct {

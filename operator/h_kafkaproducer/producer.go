@@ -1,22 +1,24 @@
 package h_kafkaproducer
 
 import (
+	"dyzs/data-flow/context"
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model/kafka"
+	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util"
 	"errors"
 	"fmt"
 	"github.com/Shopify/sarama"
 	"reflect"
 	"strconv"
 	"strings"
-	"dyzs/data-flow/context"
-	"dyzs/data-flow/logger"
-	"dyzs/data-flow/model/kafka"
-	"dyzs/data-flow/stream"
-	"dyzs/data-flow/util"
 	"time"
 )
 
 func init() {
-	stream.RegistHandler("kafkaproducer", &KafkaProducer{})
+	stream.RegistHandler("kafkaproducer", func() stream.Handler {
+		return &KafkaProducer{}
+	})
 }
 
 type KafkaProducer struct {

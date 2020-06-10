@@ -1,13 +1,6 @@
 package h_downloadimage
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"reflect"
-	"strconv"
-	"strings"
 	"dyzs/data-flow/concurrent"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
@@ -16,14 +9,23 @@ import (
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
 	"dyzs/data-flow/util/base64"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
 func init() {
-	stream.RegistHandler("downloadimage", &stream.HandlerWrapper{
-		InitFunc:   Init,
-		HandleFunc: Handle,
-		CloseFunc:  Close,
+	stream.RegistHandler("downloadimage", func() stream.Handler {
+		return &stream.HandlerWrapper{
+			InitFunc:   Init,
+			HandleFunc: Handle,
+			CloseFunc:  Close,
+		}
 	})
 }
 

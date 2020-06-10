@@ -18,6 +18,7 @@ func StartManagerProxy(port string) {
 		port = "7777"
 	}
 	server := gin.Default()
+	server.Handle(http.MethodGet, "/debug", ChangeLogLevel)
 	router := server.Group(URL_PREFIX)
 	router.Handle(http.MethodPost, "/init", Init)
 	router.Handle(http.MethodPost, "/heart", KeepAlive)
@@ -26,6 +27,14 @@ func StartManagerProxy(port string) {
 	go server.Run(":" + port)
 	//go server.Run(":7777")
 }
+
+func ChangeLogLevel(ctx *gin.Context) {
+	level := ctx.Query("level")
+	if level != "" {
+		logger.ChangeLevel(level)
+	}
+}
+
 
 type ReponseBody struct {
 	Code int         `json:"code"`

@@ -1,12 +1,6 @@
 package h_1400digest
 
 import (
-	"errors"
-	"fmt"
-	"github.com/golang/protobuf/proto"
-	"os"
-	"path"
-	"reflect"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/model/kafka"
@@ -14,6 +8,12 @@ import (
 	"dyzs/data-flow/redis"
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
+	"errors"
+	"fmt"
+	"github.com/golang/protobuf/proto"
+	"os"
+	"path"
+	"reflect"
 	"time"
 )
 
@@ -33,10 +33,12 @@ var _GAT1400_DATATYPE = map[string]string{
 func init() {
 	_ = os.Setenv("ZONEINFO", path.Join(".", "zonieinfo.zip"))
 	cstSh, _ = time.LoadLocation("Asia/Shanghai") //上海
-	stream.RegistHandler("1400digest", &stream.HandlerWrapper{
-		InitFunc:   Init,
-		HandleFunc: Handle,
-		CloseFunc:  Close,
+	stream.RegistHandler("1400digest", func() stream.Handler {
+		return &stream.HandlerWrapper{
+			InitFunc:   Init,
+			HandleFunc: Handle,
+			CloseFunc:  Close,
+		}
 	})
 }
 

@@ -2,20 +2,22 @@ package e_kafkaconsumer
 
 import (
 	"context"
+	dagContext "dyzs/data-flow/context"
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model/kafka"
+	"dyzs/data-flow/stream"
 	"errors"
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	"strconv"
 	"strings"
-	dagContext "dyzs/data-flow/context"
-	"dyzs/data-flow/logger"
-	"dyzs/data-flow/model/kafka"
-	"dyzs/data-flow/stream"
 	"time"
 )
 
 func init() {
-	stream.RegistEmitter("kafkaconsumer", &KafkaConsumer{})
+	stream.RegistEmitter("kafkaconsumer", func() stream.Emitter {
+		return &KafkaConsumer{}
+	})
 }
 
 type FromOffset int

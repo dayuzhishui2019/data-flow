@@ -4,6 +4,7 @@ import (
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model"
 	"errors"
+	"fmt"
 	"github.com/spf13/viper"
 	"os"
 	"sync"
@@ -54,6 +55,16 @@ func Init() {
 			}
 		}
 	}()
+	initEnv()
+}
+
+//环境变量
+func initEnv() {
+	envs := []string{"CENTER_IP", "CENTER_PORT"}
+	for _, k := range envs {
+		Set(k, os.Getenv(k))
+		fmt.Println("[ENV]", k, ":", os.Getenv(k))
+	}
 }
 
 func GetTask() (*model.Task, error) {
@@ -163,6 +174,19 @@ func RevokeResources(ids []string) {
 func refreshResource() {
 	atomic.StoreInt32(&delayRefreshResource, 1)
 }
+
+func GetResource(id string) (res *model.Resource, ok bool) {
+	res, ok = RESOURCE_ID_EQ[id]
+	if ok {
+		return res, ok
+	}
+	res, ok = RESOURCE_GBID_EQ[id]
+	if ok {
+		return res, ok
+	}
+	return nil, false
+}
+
 func ExsitResource(id string) bool {
 	return ExsitGbId(id) || ExsitResourceId(id)
 }

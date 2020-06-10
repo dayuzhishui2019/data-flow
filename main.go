@@ -13,12 +13,15 @@ import (
 )
 
 var TASK_FLOW = map[string][]string{
+	//data
 	"1400server": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
 	"1": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
 	"1400client": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
 	"2": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
 	"statistics": []string{"kafkaconsumer", "1400digesttoredis"},
 	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg",},
+	//video
+	"onvif" : []string{"onvif",},
 }
 
 func main() {
@@ -32,11 +35,38 @@ func main() {
 
 	context.Init()
 
+
+	context.Set("CENTER_IP", "106.13.71.247")
+	context.Set("CENTER_PORT", "18080")
+
+	context.AssignResources([]*model.Resource{
+		&model.Resource{
+			ID:           "61010000001320000001",
+			GbID:         "61010000001320000001",
+			ParentId:     "",
+			AreaNumber:   "",
+			DominionCode: "",
+			Type:         "",
+			Func:         "",
+			MvcIP:        "172.16.133.208",
+			MvcPort:      "80",
+			MvcUsername:  "admin",
+			MvcPassword:  "DFwl123456",
+			MvcChannels:  "",
+			Name:         "",
+		},
+	})
+
 	//json模糊匹配
 	extra.RegisterFuzzyDecoders()
 
 	//启动组件管理服务代理
 	proxy.StartManagerProxy(context.GetString("$manage_port"))
+
+	context.Set("$task",&model.Task{
+		ID : "test_onvif",
+		AccessType:"onvif",
+	})
 
 	var currentStream *stream.Stream
 	context.WatchConfig(func() {
@@ -76,20 +106,6 @@ func main() {
 	case <-c:
 		break
 	}
-}
-
-func initStatistics() {
-	context.Set("$task", &model.Task{
-		AccessType: "statistics",
-	})
-	context.Set("kafkaconsumer_bootstrap", os.Getenv("KAFKA_HOST"))
-	context.Set("kafkaconsumer_bootstrap", os.Getenv("KAFKA_HOST"))
-	context.Set("kafkaconsumer_topics", os.Getenv("KAFKA_TOPICS"))
-	context.Set("kafkaconsumer_groupId", os.Getenv("KAFKA_GROUP_ID"))
-	context.Set("kafkaconsumer_fromEarliestOffset", true)
-	context.Set("kafkaconsumer_batchSize", os.Getenv("BATCH_SIZE"))
-	context.Set("kafkaconsumer_batchDelay", os.Getenv("BATCH_DELAY"))
-	context.Set("1400digesttoredis_redisAddr", os.Getenv("REDIS_ADDR"))
 }
 
 

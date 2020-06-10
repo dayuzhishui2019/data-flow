@@ -13,9 +13,11 @@ import (
 )
 
 func init() {
-	stream.RegistHandler("1400filter", &stream.HandlerWrapper{
-		InitFunc:   Init,
-		HandleFunc: Handle,
+	stream.RegistHandler("1400filter", func() stream.Handler {
+		return &stream.HandlerWrapper{
+			InitFunc:   Init,
+			HandleFunc: Handle,
+		}
 	})
 }
 

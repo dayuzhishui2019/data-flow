@@ -25,7 +25,9 @@ import (
 )
 
 func init() {
-	stream.RegistHandler("1400client", &Gat1400Client{})
+	stream.RegistHandler("1400client", func() stream.Handler {
+		return &Gat1400Client{}
+	})
 }
 
 var SEND_DATA_URLS = map[string]string{
@@ -111,7 +113,7 @@ func (c *Gat1400Client) Init(config interface{}) error {
 			IdleConnTimeout:     60 * time.Second, //空闲连接在连接池中的超时时间
 		},
 		Timeout: 5 * time.Second,
-		CheckRedirect:func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
@@ -147,7 +149,7 @@ func (c *Gat1400Client) mustRegist() {
 		}
 		err := c.regist()
 		if err != nil {
-			if err==ERR_CDX{
+			if err == ERR_CDX {
 				continue
 			}
 			logger.LOG_ERROR("注册失败：", err)

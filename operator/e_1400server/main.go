@@ -22,7 +22,9 @@ import (
 )
 
 func init() {
-	stream.RegistEmitter("1400server", &Gat1400Server{})
+	stream.RegistEmitter("1400server", func() stream.Emitter {
+		return &Gat1400Server{}
+	})
 }
 
 var DEFAULT_SESSION_TIMEOUT = 60 * time.Second
@@ -271,7 +273,7 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 			return
 		}
 	}
-	if params["username"]  != s.username {
+	if params["username"] != s.username {
 		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.INVALID_OPERATION)))
 		return
 	}
