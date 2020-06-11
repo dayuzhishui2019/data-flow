@@ -215,9 +215,9 @@ func (c *Gat1400Client) regist() error {
 	params := make(map[string]string)
 	args := strings.Split(strings.ReplaceAll(strings.ReplaceAll(strings.Trim(firstAuthorization, "Digest"), `"`, ""), `'`, ""), ",")
 	for _, item := range args {
-		kv := strings.Split(item, "=")
-		if len(kv) == 2 {
-			params[strings.Trim(kv[0], " ")] = strings.Trim(kv[1], " ")
+		idx := strings.Index(item, "=")
+		if idx > 0 {
+			params[strings.Trim(item[:idx], " ")] = strings.Trim(item[idx+1:], " ")
 		}
 	}
 	//使用md5加密

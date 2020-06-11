@@ -17,6 +17,13 @@ import (
 	"time"
 )
 
+const (
+	_URL_MEDIA_INVITE = "http://mediatransfer:7555/api/invite"
+	_URL_MEDIA_BYE    = "http://mediatransfer:7555/api/bye"
+
+	_URL_CENTER_SUBMIT_CHANNEL = "http://{CENTER_IP}:{CENTER_PORT}/management/sensor/submitChannels"
+)
+
 func init() {
 	stream.RegistEmitter("onvif", func() stream.Emitter {
 		return &OnvifEmitter{}
@@ -26,8 +33,10 @@ func init() {
 type OnvifEmitter struct {
 	sync.Mutex
 
-	sessionMap map[string]*Session
-	previewWs  *PreviewWebsocket
+	submitLock  sync.Mutex
+	submitedMap map[string]*model.Resource
+	sessionMap  map[string]*Session
+	previewWs   *PreviewWebsocket
 
 	httpClient *http.Client
 
@@ -39,7 +48,7 @@ type Session struct {
 	Resource  *model.Resource
 	ChannelNo string
 
-	SessionId string
+	SessionId interface{}
 
 	Opening bool
 
@@ -49,11 +58,14 @@ type Session struct {
 
 func (e *OnvifEmitter) Init(emit func(interface{}) error) error {
 	e.ctx, e.cancel = context2.WithCancel(context2.Background())
-	e.sessionMap = make( map[string]*Session,0)
+	e.sessionMap = make(map[string]*Session, 0)
+	e.submitedMap = make(map[string]*model.Resource, 0)
 
 	e.initHttpClient()
 	//启动websocket
 	e.initWs()
+	//启动通道查询上报
+	e.startSubmitChannel()
 
 	return nil
 }
@@ -70,6 +82,65 @@ func (e *OnvifEmitter) initHttpClient() {
 		},
 		Timeout: 5 * time.Second,
 	}
+}
+
+func (e *OnvifEmitter) startSubmitChannel() {
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			select {
+			case <-e.ctx.Done():
+				return
+			default:
+			}
+			e.submitLock.Lock()
+			unSubmitResources := make([]*model.Resource, 0)
+			context.ReadAllResourceGB(func(gbIdMaps map[string]*model.Resource) {
+				for gid, r := range gbIdMaps {
+					if _, ok := e.submitedMap[gid]; !ok {
+						unSubmitResources = append(unSubmitResources, r)
+					}
+				}
+			})
+			e.submitLock.Unlock()
+			if len(unSubmitResources) == 0 {
+				continue
+			}
+			//上报通道
+			for _, usr := range unSubmitResources {
+				channels, err := LoadResourceChannels(usr)
+				if err != nil {
+					logger.LOG_WARN("onvif获取通道失败,GBID:", usr.GbID, ",err:", err)
+					continue
+				}
+				if len(channels) == 0 {
+					logger.LOG_WARN("onvif获取通道个数为0", usr.GbID)
+					continue
+				}
+				//上报
+				channelsReq := make([]map[string]interface{}, 0)
+				for _, c := range channels {
+					channelsReq = append(channelsReq, map[string]interface{}{
+						"channelNo": c.Token,
+						"id":        "",
+						"name":      c.Name,
+						"parentId":  "",
+					})
+				}
+				err = util.Retry(func() error {
+					return e.request(strings.ReplaceAll(strings.ReplaceAll(_URL_CENTER_SUBMIT_CHANNEL, "{CENTER_IP}", context.GetString("CENTER_IP")), "{CENTER_PORT}", context.GetString("CENTER_PORT")), http.MethodPost, "application/json", map[string]interface{}{
+						"channels": channelsReq,
+						"gid":      usr.GbID,
+					}, nil)
+				}, 3, 1*time.Second)
+				if err != nil {
+					logger.LOG_WARN("上报通道信息异常：", err)
+					continue
+				}
+				e.submitedMap[usr.GbID] = usr
+			}
+		}
+	}()
 }
 
 func (e *OnvifEmitter) initWs() {
@@ -89,23 +160,18 @@ func (e *OnvifEmitter) initWs() {
 }
 
 func (ce *OnvifEmitter) openSession(idChStr string, outputChannel string) {
-	id_ch := strings.Split(idChStr, "_")
-	if len(id_ch) < 2 {
+	idx := strings.Index(idChStr, "_")
+	if idx < 0 {
+		logger.LOG_WARN("错误的设备通道格式：", idChStr)
 		return
 	}
-	id := id_ch[0]
-	channel := id_ch[1]
+	id := idChStr[:idx]
+	channel := idChStr[idx+1:]
 	resource, ok := context.GetResource(id)
 	if !ok {
 		logger.LOG_WARN("未找到设备资源：", id)
 		return
 	}
-
-
-
-	cs ,err := LoadResourceChannels(resource)
-	channel = string(cs[0].Token)
-
 
 	//查询设备开流地址
 	rtsp, err := LoadChannelRTSP(resource, channel)
@@ -115,7 +181,7 @@ func (ce *OnvifEmitter) openSession(idChStr string, outputChannel string) {
 	}
 	s := &Session{
 		Resource:  resource,
-		ChannelNo: channel,
+		ChannelNo: idChStr,
 
 		InputChannel:  rtsp,
 		OutputChannel: outputChannel,
@@ -144,9 +210,9 @@ func (ce *OnvifEmitter) inviteMedia(session *Session) {
 			"publishurl": session.OutputChannel,
 		},
 	}
-	openStreamRes := make(map[string]string)
+	openStreamRes := make(map[string]interface{})
 	err := util.Retry(func() error {
-		return ce.request("http://172.16.129.104:7555/api/invite", http.MethodPost, "application/json", openStreamReq, &openStreamRes)
+		return ce.request(_URL_MEDIA_INVITE, http.MethodPost, "application/json", openStreamReq, &openStreamRes)
 	}, 3, 1*time.Second)
 	if err != nil {
 		session.Opening = false
@@ -175,7 +241,7 @@ func (ce *OnvifEmitter) closeSession(idChStr string) {
 	closeStreamRes := map[string]interface{}{}
 
 	err := util.Retry(func() error {
-		return ce.request("http://172.16.129.104:7555/api/bye", http.MethodPost, "application/json", closeStreamReq, &closeStreamRes)
+		return ce.request(_URL_MEDIA_BYE, http.MethodPost, "application/json", closeStreamReq, &closeStreamRes)
 	}, 3, 1*time.Second)
 	if err != nil {
 		session.Opening = false
@@ -234,6 +300,7 @@ func (ce *OnvifEmitter) request(url, method, contentType string, body interface{
 	if err != nil {
 		return err
 	}
+	logger.LOG_INFO("http-response:", string(resBytes))
 	if resPointer != nil {
 		return jsoniter.Unmarshal(resBytes, resPointer)
 	}

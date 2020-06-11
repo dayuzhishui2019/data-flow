@@ -176,6 +176,8 @@ func refreshResource() {
 }
 
 func GetResource(id string) (res *model.Resource, ok bool) {
+	rwLock.RLock()
+	defer rwLock.RUnlock()
 	res, ok = RESOURCE_ID_EQ[id]
 	if ok {
 		return res, ok
@@ -185,6 +187,13 @@ func GetResource(id string) (res *model.Resource, ok bool) {
 		return res, ok
 	}
 	return nil, false
+}
+
+
+func ReadAllResourceGB(cb func(res map[string]*model.Resource)){
+	rwLock.RLock()
+	defer rwLock.RUnlock()
+	cb(RESOURCE_GBID_EQ)
 }
 
 func ExsitResource(id string) bool {

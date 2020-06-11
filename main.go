@@ -1,31 +1,31 @@
 package main
 
 import (
-	"github.com/json-iterator/go/extra"
-	"os"
-	"os/signal"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model"
 	_ "dyzs/data-flow/operator"
 	"dyzs/data-flow/proxy"
 	"dyzs/data-flow/stream"
+	"github.com/json-iterator/go/extra"
+	"os"
+	"os/signal"
 )
 
 var TASK_FLOW = map[string][]string{
 	//data
-	"1400server": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
-	"1": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
-	"1400client": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
-	"2": []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
-	"statistics": []string{"kafkaconsumer", "1400digesttoredis"},
-	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg",},
+	"1400server":     []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
+	"1":              []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
+	"1400client":     []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
+	"2":              []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
+	"statistics":     []string{"kafkaconsumer", "1400digesttoredis"},
+	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg"},
 	//video
-	"onvif" : []string{"onvif",},
+	"onvif": []string{"onvif"},
+	"101": []string{"onvif"},
 }
 
 func main() {
-
 
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))
@@ -35,27 +35,8 @@ func main() {
 
 	context.Init()
 
-
-	context.Set("CENTER_IP", "106.13.71.247")
-	context.Set("CENTER_PORT", "18080")
-
-	context.AssignResources([]*model.Resource{
-		&model.Resource{
-			ID:           "61010000001320000001",
-			GbID:         "61010000001320000001",
-			ParentId:     "",
-			AreaNumber:   "",
-			DominionCode: "",
-			Type:         "",
-			Func:         "",
-			MvcIP:        "172.16.133.208",
-			MvcPort:      "80",
-			MvcUsername:  "admin",
-			MvcPassword:  "DFwl123456",
-			MvcChannels:  "",
-			Name:         "",
-		},
-	})
+	//context.Set("CENTER_IP", "106.13.71.247")
+	//context.Set("CENTER_PORT", "18080")
 
 	//json模糊匹配
 	extra.RegisterFuzzyDecoders()
@@ -63,9 +44,9 @@ func main() {
 	//启动组件管理服务代理
 	proxy.StartManagerProxy(context.GetString("$manage_port"))
 
-	context.Set("$task",&model.Task{
-		ID : "test_onvif",
-		AccessType:"onvif",
+	context.Set("$task", &model.Task{
+		ID:         "test_onvif",
+		AccessType: "onvif",
 	})
 
 	var currentStream *stream.Stream
@@ -107,7 +88,6 @@ func main() {
 		break
 	}
 }
-
 
 func init1400server() {
 	context.Set("$task", &model.Task{

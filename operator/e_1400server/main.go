@@ -253,9 +253,9 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 	authorization = strings.Trim(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(authorization, "Digest", ""), "'", ""), `"`, ""), " ")
 	args := strings.Split(authorization, ",")
 	for _, item := range args {
-		kv := strings.Split(item, "=")
-		if len(kv) == 2 {
-			params[strings.Trim(kv[0], " ")] = strings.Trim(kv[1], " ")
+		idx := strings.Index(item, "=")
+		if idx > 0 {
+			params[strings.Trim(item[:idx], " ")] = strings.Trim(item[idx+1:], " ")
 		}
 	}
 	keys := []string{
