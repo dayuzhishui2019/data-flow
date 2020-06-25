@@ -111,7 +111,7 @@ func (c *Gat1400Client) Init(config interface{}) error {
 			IdleConnTimeout:     60 * time.Second, //空闲连接在连接池中的超时时间
 		},
 		Timeout: 5 * time.Second,
-		CheckRedirect:func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
@@ -147,7 +147,7 @@ func (c *Gat1400Client) mustRegist() {
 		}
 		err := c.regist()
 		if err != nil {
-			if err==ERR_CDX{
+			if err == ERR_CDX {
 				continue
 			}
 			logger.LOG_ERROR("注册失败：", err)
@@ -254,7 +254,11 @@ func (c *Gat1400Client) regist() error {
 	var authStr strings.Builder
 	authStr.WriteString("Digest ")
 	for _, k := range keys {
-		authStr.WriteString(fmt.Sprintf(`%s='%s',`, k, params[k]))
+		if k == "nc" || k == "qop" {
+			authStr.WriteString(fmt.Sprintf(`%s=%s,`, k, params[k]))
+		} else {
+			authStr.WriteString(fmt.Sprintf(`%s="%s",`, k, params[k]))
+		}
 	}
 	secondAuthorization := strings.Trim(authStr.String(), ",")
 	logger.LOG_INFO("第二次请求Authorization :", secondAuthorization)
