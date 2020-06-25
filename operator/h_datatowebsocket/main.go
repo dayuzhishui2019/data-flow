@@ -45,11 +45,11 @@ func (h *HubmsgWebSocket) Init(config interface{}) error {
 	h.previewWs.Run(func(subscribe []string, unSubscribe []string) {
 		h.resourceLock.Lock()
 		for _, s := range subscribe {
-			logger.LOG_INFO("新增预览：",s)
+			logger.LOG_INFO("新增预览：", s)
 			h.resourceMap[s] = true
 		}
 		for _, us := range unSubscribe {
-			logger.LOG_INFO("移除预览：",us)
+			logger.LOG_INFO("移除预览：", us)
 			delete(h.resourceMap, us)
 		}
 		h.resourceLock.Unlock()
@@ -73,7 +73,13 @@ func (h *HubmsgWebSocket) Handle(data interface{}, next func(interface{}) error)
 	})
 	h.resourceLock.RUnlock()
 	if len(previewMsgs) > 0 {
-		h.previewC <- previewMsgs
+		select {
+		case h.previewC <- previewMsgs:
+		default:
+			logger.LOG_INFO("预览队列满")
+			break
+		}
+
 	}
 	return next(data)
 }

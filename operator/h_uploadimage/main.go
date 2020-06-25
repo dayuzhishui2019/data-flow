@@ -38,7 +38,11 @@ func (iu *ImageUploader) Init(config interface{}) error {
 	if configCapacity > 0 {
 		capacity = configCapacity
 	}
-	imageServerAddr := context.GetString("$host") + ":8888"
+	host := context.GetString("$host")
+	if host==""{
+		host = "gofastdfs"
+	}
+	imageServerAddr := host + ":8080"
 	logger.LOG_WARN("------------------ imagedeal config ------------------")
 	logger.LOG_WARN("uploadimage_capacity : " + strconv.Itoa(capacity))
 	logger.LOG_WARN("uploadimage_imageServerAddr : " + imageServerAddr)

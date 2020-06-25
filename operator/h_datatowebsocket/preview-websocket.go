@@ -151,6 +151,7 @@ func (pw *PreviewWebsocket) previewData() {
 			ws = pw.ws
 			pw.wsLock.Unlock()
 			if ws == nil {
+				logger.LOG_INFO("ws链接不存在")
 				continue
 			}
 			pw.dh.downloadWrapImage(msgs)
@@ -173,7 +174,7 @@ func (pw *PreviewWebsocket) previewData() {
 			for _, wm := range wsMsgs {
 				msgStr, _ := jsoniter.Marshal(wm)
 				//logger.LOG_INFO("发送数据" + string(msgStr))
-				err := pw.ws.WriteMessage(websocket.TextMessage, msgStr)
+				err := ws.WriteMessage(websocket.TextMessage, msgStr)
 				if err != nil {
 					logger.LOG_WARN("发送预览数据失败：", err)
 					pw.wsLock.Lock()

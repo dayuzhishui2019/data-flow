@@ -1,11 +1,11 @@
 package context
 
 import (
+	"dyzs/data-flow/logger"
+	"dyzs/data-flow/model"
 	"errors"
 	"github.com/spf13/viper"
 	"os"
-	"dyzs/data-flow/logger"
-	"dyzs/data-flow/model"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -137,7 +137,25 @@ func AssignResources(eqs []*model.Resource) {
 			RESOURCE_ID_EQ[eq.ID] = eq
 			RESOURCE_GBID_EQ[eq.GbID] = eq
 		}
-		logger.LOG_WARN("共接收到采集设备 ===>", len(RESOURCE_ID_EQ))
+		logger.LOG_WARN("共接收资源 ===>", len(eqs))
+		logger.LOG_WARN("当前资源 ===>", len(RESOURCE_ID_EQ))
+		refreshResource()
+	}
+}
+
+func RevokeResources(ids []string) {
+	if len(ids) > 0 {
+		rwLock.Lock()
+		defer rwLock.Unlock()
+		for _, id := range ids {
+			eq, ok := RESOURCE_ID_EQ[id]
+			if ok && eq != nil {
+				delete(RESOURCE_GBID_EQ, eq.GbID)
+			}
+			delete(RESOURCE_ID_EQ, id)
+		}
+		logger.LOG_WARN("共移除资源 ===>", len(ids))
+		logger.LOG_WARN("当前资源 ===>", len(RESOURCE_ID_EQ))
 		refreshResource()
 	}
 }

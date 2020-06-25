@@ -4,3 +4,6 @@ data-hub
 .idea
 logs
 data-stream
+data-flow
+./data-flow
+./statistics/data-statistics

@@ -38,7 +38,7 @@ type MotorVehicleObject struct {
 	NumOfPassenger       int    `json:"NumOfPassenger"`       //车后部物品描述
 	PassTime             string `json:"PassTime"`             //车内人数
 	NameOfPassedRoad     string `json:"NameOfPassedRoad"`     //经过道路名称
-	IsSuspicious         bool   `json:"IsSuspicious"`         //是否可疑车
+	IsSuspicious         string   `json:"IsSuspicious"`         //是否可疑车
 	Sunvisor             int    `json:"Sunvisor"`             //遮阳板状态
 	SafetyBelt           int    `json:"SafetyBelt"`           //安全带状态
 	Calling              int    `json:"Calling"`              //打电话状态
@@ -48,7 +48,7 @@ type MotorVehicleObject struct {
 	DriverFaceID         string `json:"DriverFaceID"`         //主驾人脸标识
 	CopilotFaceID        string `json:"CopilotFaceID"`        //副驾人脸标识
 	VehicleStyles        string `json:"VehicleStyles"`        //车辆年款
-	IsModified           bool   `json:"IsModified"`           //改装标志
+	IsModified           string   `json:"IsModified"`           //改装标志
 
 	DescOfFrontItem string `json:"DescOfFrontItem"`
 	ResJSON         string `json:"resJson"`
@@ -69,9 +69,9 @@ type MotorVehicleObject struct {
 	PlateNo             string             `json:"PlateNo"`             //车牌号;
 	PlateNoAttach       string             `json:"PlateNoAttach"`       //挂车牌号;
 	PlateDescribe       string             `json:"PlateDescribe"`       //车牌描述;
-	IsDecked            bool               `json:"IsDecked"`            //是否套牌;
-	IsAltered           bool               `json:"IsAltered"`           //是否涂改;
-	IsCovered           bool               `json:"IsCovered"`           //是否遮挡;
+	IsDecked            string               `json:"IsDecked"`            //是否套牌;
+	IsAltered           string               `json:"IsAltered"`           //是否涂改;
+	IsCovered           string               `json:"IsCovered"`           //是否遮挡;
 	Speed               float64            `json:"Speed"`               //行驶速度;
 	DrivingStatusCode   string             `json:"DrivingStatusCode"`   //行驶状态代码;
 	UsingPropertiesCode int                `json:"UsingPropertiesCode"` //车辆使用性质代码;

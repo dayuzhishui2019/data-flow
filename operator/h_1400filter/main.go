@@ -1,15 +1,15 @@
 package h_1400filter
 
 import (
-	"errors"
-	"fmt"
-	"reflect"
-	"strings"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/model/gat1400/base"
 	"dyzs/data-flow/stream"
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
 )
 
 func init() {
@@ -66,10 +66,13 @@ func Handle(data interface{}, next func(interface{}) error) error {
 		//filter by resourceId
 		if isFilterByResource {
 			wrap = wrap.FilterByDeviceID(func(deviceID string) bool {
-				return context.ExsitResource(deviceID)
+				flag := context.ExsitResource(deviceID)
+				if !flag {
+					logger.LOG_INFO("数据所属资源过滤：", " -filter- ", deviceID)
+				}
+				return flag
 			})
 			if wrap == nil {
-				logger.LOG_INFO("数据所属资源过滤：", " filter")
 				isFilterData = true
 				continue
 			}
