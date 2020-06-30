@@ -256,7 +256,11 @@ func (c *Gat1400Client) regist() error {
 	var authStr strings.Builder
 	authStr.WriteString("Digest ")
 	for _, k := range keys {
-		authStr.WriteString(fmt.Sprintf(`%s='%s',`, k, params[k]))
+		if k == "nc" || k == "qop" {
+			authStr.WriteString(fmt.Sprintf(`%s=%s,`, k, params[k]))
+		} else {
+			authStr.WriteString(fmt.Sprintf(`%s="%s",`, k, params[k]))
+		}
 	}
 	secondAuthorization := strings.Trim(authStr.String(), ",")
 	logger.LOG_INFO("第二次请求Authorization :", secondAuthorization)
