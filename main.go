@@ -27,6 +27,34 @@ var TASK_FLOW = map[string][]string{
 
 func main() {
 
+	//res,err := http.Get("https://www.sina.com")
+	//if err!=nil{
+	//	fmt.Println(err)
+	//	return
+	//}
+	//body,_ := ioutil.ReadAll(res.Body)
+	//fmt.Println(string(body))
+
+
+	//fmt.Println("___"+time.Now().UTC().Format(time.RFC3339Nano)+"___")
+	//rs ,_ := e_onvif.LoadResourceChannels(&model.Resource{
+	//	ID:           "1232131312",
+	//	GbID:         "",
+	//	ParentId:     "",
+	//	AreaNumber:   "",
+	//	DominionCode: "",
+	//	Type:         "",
+	//	Func:         "",
+	//	MvcIP:        "172.16.133.207",
+	//	MvcPort:      "80",
+	//	MvcUsername:  "admin",
+	//	MvcPassword:  "DFwl123456",
+	//	MvcChannels:  "",
+	//	Name:         "",
+	//})
+	//
+	//fmt.Println("通道个数：",rs)
+
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))
 	context.Set("$logLevel", os.Getenv("LOG_LEVEL"))

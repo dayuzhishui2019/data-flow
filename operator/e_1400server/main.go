@@ -105,6 +105,11 @@ func (s *Gat1400Server) InitHttpServer() {
 		s.regist(c)
 	})
 
+	//取消注册
+	engine.POST(base.URL_UNREGIST, func(c *gin.Context) {
+		s.unRegist(c)
+	})
+
 	//保活
 	engine.POST(base.URL_KEEPALIVE, func(c *gin.Context) {
 		s.keepalive(c)
@@ -302,6 +307,18 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 	}
 	s.Unlock()
 	c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.OK)))
+}
+
+/**
+取消注冊
+
+*/
+func (s *Gat1400Server) unRegist(c *gin.Context) {
+	viewID := ""
+	if c.Request.Header.Get("User-Identify") != "" {
+		viewID = c.Request.Header.Get("User-Identify")
+	}
+	c.JSON(http.StatusOK, base.BuildSingleResponse(base.BuildResponseObject(base.URL_UNREGIST, viewID, base.OK)))
 }
 
 /**

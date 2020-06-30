@@ -18,6 +18,8 @@ const (
 const (
 	URL_REGIST = "/VIID/System/Register"
 
+	URL_UNREGIST = "/VIID/System/UnRegister"
+
 	URL_KEEPALIVE = "/VIID/System/Keepalive"
 
 	URL_TIME = "/VIID/System/Time"
