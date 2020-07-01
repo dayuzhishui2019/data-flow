@@ -56,8 +56,8 @@ func main() {
 	//
 	//rs ,_ := e_onvif.LoadResourceChannels(resource)
 	//
-	//fmt.Println("通道个数：",rs)
-	//
+	//fmt.Println("通道个数：",rs[0].Token)
+
 	//if len(rs)>0{
 	//	//rtsp
 	//	//rtsp,err := e_onvif.LoadChannelRTSP(resource,string(rs[0].Token))

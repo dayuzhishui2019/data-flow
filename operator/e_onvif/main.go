@@ -206,6 +206,7 @@ func (ce *OnvifEmitter) ptzControl(idChStr string, ptzControl PTZControl) {
 	id := idChStr[:idx]
 	channel := idChStr[idx+1:]
 	resource, ok := context.GetResource(id)
+
 	if !ok {
 		logger.LOG_WARN("未找到设备资源：", id)
 		return

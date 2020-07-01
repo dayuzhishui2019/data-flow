@@ -84,6 +84,9 @@ LOOP:
 		wsPort := context2.GetString("CENTER_PORT")
 		wsPath := _WS_PATH
 
+		centerAddr = "106.13.71.247"
+		wsPort = "18080"
+
 		task, err := context2.GetTask()
 		if err != nil {
 			continue
@@ -127,9 +130,6 @@ LOOP:
 			err = jsoniter.Unmarshal(wrap.Content, data)
 			if err != nil {
 				logger.LOG_WARN(err)
-				continue
-			}
-			if len(data.Subscribe) == 0 && len(data.UnSubscribe) == 0 {
 				continue
 			}
 			pw.handle(data)
