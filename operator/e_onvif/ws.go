@@ -41,6 +41,12 @@ type WsSubject struct {
 	RtmpMap map[string]string `json:"rtmp"`
 	Subscribe   []string `json:"subscribe"`
 	UnSubscribe []string `json:"unSubscribe"`
+	PTZControl map[string]PTZControl `json:"ptzControl"`
+}
+
+type PTZControl struct{
+	CMD string `json:"cmd"`
+	Speed float64 `json:"speed"`
 }
 
 type PreviewWebsocket struct {

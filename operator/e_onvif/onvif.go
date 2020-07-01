@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/yakovlevdmv/goonvif"
 	"github.com/yakovlevdmv/goonvif/Media"
+	"github.com/yakovlevdmv/goonvif/PTZ"
+	"github.com/yakovlevdmv/goonvif/xsd"
 	"github.com/yakovlevdmv/goonvif/xsd/onvif"
 	"io/ioutil"
 	"net/http"
@@ -15,7 +17,7 @@ import (
 
 //获取通道列表
 func LoadResourceChannels(resource *model.Resource) (channels []onvif.Profile, err error) {
-	fmt.Println(resource.MvcIP ,",", resource.MvcPort ,",",  resource.MvcUsername ,",", resource.MvcPassword)
+	fmt.Println(resource.MvcIP, ",", resource.MvcPort, ",", resource.MvcUsername, ",", resource.MvcPassword)
 	if resource.MvcIP == "" || resource.MvcPort == "" || resource.MvcUsername == "" || resource.MvcPassword == "" {
 		return nil, errors.New("设备信息缺失")
 	}
@@ -61,21 +63,71 @@ func LoadChannelRTSP(resource *model.Resource, channelToken string) (rtsp string
 	return prependUsername(string(gp.MediaUri.Uri), resource.MvcUsername, resource.MvcPassword), nil
 }
 
-
-
 //控制云台
-func ControlPTZ(resource *model.Resource, channelToken string,pos,speed string ) (err error) {
+func ControlPTZ(resource *model.Resource, channelToken string, cmd string, speed float64) (err error) {
 	device, err := goonvif.NewDevice(resource.MvcIP + ":" + resource.MvcPort)
 	if err != nil {
-		return  err
+		return err
 	}
 	device.Authenticate(resource.MvcUsername, resource.MvcPassword)
-	//res, err := device.CallMethod(PTZ.AbsoluteMove{
-	//	ProfileToken: onvif.ReferenceToken(channelToken),
-	//	Position : pos,
-	//	Speed :speed,
-	//})
-	return nil
+
+	panTilt := onvif.Vector2D{
+		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"),
+	}
+	zoom := onvif.Vector1D{
+		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"),
+	}
+	stop := false
+	switch cmd {
+	case "LEFT":
+		panTilt.X = -speed
+		panTilt.Y = 0
+	case "RIGHT":
+		panTilt.X = speed
+		panTilt.Y = 0
+	case "UP":
+		panTilt.X = 0
+		panTilt.Y = speed
+	case "DOWN":
+		panTilt.X = 0
+		panTilt.Y = -speed
+	case "LEFTUP":
+		panTilt.X = -speed
+		panTilt.Y = speed
+	case "RIGHTUP":
+		panTilt.X = speed
+		panTilt.Y = speed
+	case "LEFTDOWN":
+		panTilt.X = -speed
+		panTilt.Y = -speed
+	case "RIGHTDOWN":
+		panTilt.X = speed
+		panTilt.Y = -speed
+	case "ZOOMIN":
+		zoom.X = speed
+	case "ZOOMOUT":
+		zoom.X = -speed
+	case "STOP":
+		stop = true
+	default:
+	}
+	if stop {
+		_, err = device.CallMethod(PTZ.Stop{
+			ProfileToken: onvif.ReferenceToken(channelToken),
+			PanTilt:      true,
+			Zoom:         true,
+		})
+	} else {
+		_, err = device.CallMethod(PTZ.ContinuousMove{
+			ProfileToken: onvif.ReferenceToken(channelToken),
+			Velocity: onvif.PTZSpeed{
+				PanTilt: panTilt,
+				Zoom:    zoom,
+			},
+			Timeout: "PT00H00M10S",
+		})
+	}
+	return err
 }
 
 func prependUsername(uri, username, password string) string {
@@ -105,6 +157,7 @@ func decodeSoap(res *http.Response, ptr interface{}) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(string(data))
 	err = xml.Unmarshal(data, evp)
 	if err != nil {
 		return err

@@ -37,7 +37,8 @@ func main() {
 
 
 	//fmt.Println("___"+time.Now().UTC().Format(time.RFC3339Nano)+"___")
-	//rs ,_ := e_onvif.LoadResourceChannels(&model.Resource{
+	//
+	//resource := &model.Resource{
 	//	ID:           "1232131312",
 	//	GbID:         "",
 	//	ParentId:     "",
@@ -45,15 +46,32 @@ func main() {
 	//	DominionCode: "",
 	//	Type:         "",
 	//	Func:         "",
-	//	MvcIP:        "172.16.133.207",
+	//	MvcIP:        "172.16.133.249",
 	//	MvcPort:      "80",
 	//	MvcUsername:  "admin",
 	//	MvcPassword:  "DFwl123456",
 	//	MvcChannels:  "",
 	//	Name:         "",
-	//})
+	//}
+	//
+	//rs ,_ := e_onvif.LoadResourceChannels(resource)
 	//
 	//fmt.Println("通道个数：",rs)
+	//
+	//if len(rs)>0{
+	//	//rtsp
+	//	//rtsp,err := e_onvif.LoadChannelRTSP(resource,string(rs[0].Token))
+	//	//fmt.Println(rtsp,err)
+	//
+	//	//ptz
+	//	err := e_onvif.ControlPTZ(resource,string(rs[0].Token),"LEFT",0.5)
+	//	fmt.Println(err)
+	//
+	//	time.Sleep(2*time.Second)
+	//	_ = e_onvif.ControlPTZ(resource,string(rs[0].Token),"STOP",0)
+	//}
+
+	//return
 
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))

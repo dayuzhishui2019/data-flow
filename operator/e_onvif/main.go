@@ -156,6 +156,10 @@ func (e *OnvifEmitter) initWs() {
 			logger.LOG_INFO("新增预览：", s)
 			e.openSession(s, subscribe.RtmpMap[s])
 		}
+		for idch, pc := range subscribe.PTZControl {
+			logger.LOG_INFO("云台控制：", idch)
+			e.ptzControl(idch, pc)
+		}
 	})
 }
 
@@ -191,6 +195,25 @@ func (ce *OnvifEmitter) openSession(idChStr string, outputChannel string) {
 	ce.Unlock()
 	//通知媒体服务开流
 	ce.inviteMedia(s)
+}
+
+func (ce *OnvifEmitter) ptzControl(idChStr string, ptzControl PTZControl) {
+	idx := strings.Index(idChStr, "_")
+	if idx < 0 {
+		logger.LOG_WARN("错误的设备通道格式：", idChStr)
+		return
+	}
+	id := idChStr[:idx]
+	channel := idChStr[idx+1:]
+	resource, ok := context.GetResource(id)
+	if !ok {
+		logger.LOG_WARN("未找到设备资源：", id)
+		return
+	}
+	err := ControlPTZ(resource, channel, ptzControl.CMD, ptzControl.Speed)
+	if err != nil {
+		logger.LOG_WARN("云台控制异常：", err)
+	}
 }
 
 func (ce *OnvifEmitter) inviteMedia(session *Session) {
