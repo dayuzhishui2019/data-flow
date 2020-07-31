@@ -246,7 +246,7 @@ func (s *Gat1400Server) regist(c *gin.Context) {
 	if authorization == "" {
 		//第一次注册
 		nonce := strings.ReplaceAll(uuid.NewV4().String(), "-", "")[0:12]
-		authorization = fmt.Sprintf(`Digest realm='myrealm',qop='auth',nonce='%s'`, nonce)
+		authorization = fmt.Sprintf(`Digest realm="myrealm",qop="auth",nonce="%s"`, nonce)
 		mh := textproto.MIMEHeader(c.Writer.Header())
 		mh["WWW-Authenticate"] = []string{authorization}
 		c.JSON(http.StatusUnauthorized, base.BuildSingleResponse(base.BuildResponseObject(base.URL_REGIST, viewID, base.VIEWID_IS_NULL)))
