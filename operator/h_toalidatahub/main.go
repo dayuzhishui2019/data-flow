@@ -4,12 +4,10 @@ import (
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
-	"dyzs/data-flow/model/kafka"
 	"dyzs/data-flow/stream"
 	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
-	jsoniter "github.com/json-iterator/go"
 	"reflect"
 	"time"
 )
@@ -26,6 +24,7 @@ type AliDatahub struct {
 	endpoint    string
 	projectName string
 	topicName   string
+	shardId     string
 
 	dh datahub.DataHubApi
 }
@@ -44,43 +43,89 @@ func (h *AliDatahub) Init(config interface{}) error {
 	h.projectName = context.GetString("toalidatahub_projectName")
 	h.topicName = context.GetString("toalidatahub_topicName")
 	h.dh = datahub.New(h.accessId, h.accessKey, h.endpoint)
-	return nil
+
+	err := h.createProject()
+	if err == nil {
+		err = h.createTupleTopic()
+	}
+	if err == nil {
+		ls, err := h.dh.ListShard(h.projectName, h.topicName)
+		if err != nil {
+			logger.LOG_WARN("get shard list failed,", err)
+			cerr := h.createTupleTopic()
+			if cerr != nil {
+				logger.LOG_WARN("创建topic异常：", cerr)
+				return cerr
+			}
+		}
+		if len(ls.Shards) == 0 {
+			return errors.New("shardId empty")
+		}
+		h.shardId = ls.Shards[0].ShardId
+	}
+	if err != nil {
+		logger.LOG_WARN("上云初始化失败，", err)
+	}
+	return err
 }
 
 func (h *AliDatahub) Handle(data interface{}, next func(interface{}) error) error {
-	kafkaMsgs, ok := data.([]*kafka.KafkaMessage)
-
-	ls, err := h.dh.ListShard(h.projectName, h.topicName)
-	if err != nil {
-		logger.LOG_WARN("get shard list failed,", err)
-		cerr := h.createTupleTopic()
-		if cerr != nil {
-			logger.LOG_WARN("创建topic异常：", cerr)
-			return nil
-		}
-	}
+	wraps, ok := data.([]*gat1400.Gat1400Wrap)
 	if !ok {
 		return errors.New(fmt.Sprintf("Handle [kafkamsgto1400] 数据格式错误，need []*kafka.KafkaMessage , get %T", reflect.TypeOf(data)))
 	}
-	if len(kafkaMsgs) == 0 {
+	if len(wraps) == 0 {
 		return nil
 	}
-	wraps := make([]*gat1400.Gat1400Wrap, 0)
-
-	for _, kafkaMsg := range kafkaMsgs {
-		w := &gat1400.Gat1400Wrap{}
-		err := jsoniter.Unmarshal(kafkaMsg.Value, w)
+	for _, wrap := range wraps {
+		bytes, err := wrap.BuildToJson()
 		if err != nil {
-			logger.LOG_ERROR("kafkamsgto1400 消息转化失败", err)
+			logger.LOG_WARN("序列化异常：", err)
 			continue
 		}
-		wraps = append(wraps, w)
+		h.putTupleData(string(bytes))
 	}
-	if len(wraps) <= 0 {
-		return nil
-	}
-	return next(wraps)
+	return nil
 }
+
+func (h *AliDatahub) putTupleData(data string) {
+	topic, err := h.dh.GetTopic(h.projectName, h.topicName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	records := make([]datahub.IRecord, 3)
+	record := datahub.NewTupleRecord(topic.RecordSchema, 0)
+	record.ShardId = h.shardId
+	record.SetValueByName("data", data)
+	records = append(records, record)
+
+	maxReTry := 3
+	retryNum := 0
+	for retryNum < maxReTry {
+		result, err := h.dh.PutRecords(h.projectName, h.topicName, records)
+		if err != nil {
+			if _, ok := err.(*datahub.LimitExceededError); ok {
+				logger.LOG_WARN("maybe qps exceed limit,retry")
+				retryNum++
+				time.Sleep(5 * time.Second)
+				continue
+			} else {
+				logger.LOG_WARN("put record failed,", err)
+				return
+			}
+		}
+		logger.LOG_INFO("put successful num is %d, put records failed num is %d\n", len(records)-result.FailedRecordCount, result.FailedRecordCount)
+		for _, v := range result.FailedRecords {
+			logger.LOG_ERROR(v)
+		}
+		break
+	}
+	if retryNum >= maxReTry {
+		logger.LOG_WARN("put records failed ")
+	}
+}
+
 func (h *AliDatahub) createProject() (err error) {
 	if err = h.dh.CreateProject(h.projectName, "project comment"); err != nil {
 		if _, ok := err.(*datahub.InvalidParameterError); ok {
@@ -95,13 +140,13 @@ func (h *AliDatahub) createProject() (err error) {
 				// wait 5 seconds
 				time.Sleep(5 * time.Second)
 				if err = h.dh.CreateProject(h.projectName, "project comment"); err != nil {
-					logger.LOG_WARN("create project failed:",err)
+					logger.LOG_WARN("create project failed:", err)
 				} else {
 					break
 				}
 			}
 		} else {
-			logger.LOG_WARN("unknown error:",err)
+			logger.LOG_WARN("unknown error:", err)
 		}
 	}
 	return err
