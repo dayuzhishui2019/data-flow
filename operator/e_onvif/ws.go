@@ -84,9 +84,6 @@ LOOP:
 		wsPort := context2.GetString("CENTER_PORT")
 		wsPath := _WS_PATH
 
-		centerAddr = "106.13.71.247"
-		wsPort = "18080"
-
 		task, err := context2.GetTask()
 		if err != nil {
 			continue

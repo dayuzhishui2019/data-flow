@@ -72,10 +72,10 @@ func ControlPTZ(resource *model.Resource, channelToken string, cmd string, speed
 	device.Authenticate(resource.MvcUsername, resource.MvcPassword)
 
 	panTilt := onvif.Vector2D{
-		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"),
+		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace"),
 	}
 	zoom := onvif.Vector1D{
-		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace"),
+		Space: xsd.AnyURI("http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace"),
 	}
 	stop := false
 	switch cmd {
@@ -118,7 +118,7 @@ func ControlPTZ(resource *model.Resource, channelToken string, cmd string, speed
 			Zoom:         true,
 		})
 	} else {
-		_, err = device.CallMethod(PTZ.ContinuousMove{
+		httpres, err := device.CallMethod(PTZ.ContinuousMove{
 			ProfileToken: onvif.ReferenceToken(channelToken),
 			Velocity: onvif.PTZSpeed{
 				PanTilt: panTilt,
@@ -126,6 +126,8 @@ func ControlPTZ(resource *model.Resource, channelToken string, cmd string, speed
 			},
 			Timeout: "PT00H00M10S",
 		})
+		data, _ := ioutil.ReadAll(httpres.Body)
+		fmt.Println(string(data),err)
 	}
 	return err
 }

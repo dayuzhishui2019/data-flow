@@ -22,7 +22,7 @@ var TASK_FLOW = map[string][]string{
 	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg"},
 	//video
 	"onvif": []string{"onvif"},
-	"101": []string{"onvif"},
+	"101":   []string{"onvif"},
 }
 
 func main() {
@@ -35,7 +35,6 @@ func main() {
 	//body,_ := ioutil.ReadAll(res.Body)
 	//fmt.Println(string(body))
 
-
 	//fmt.Println("___"+time.Now().UTC().Format(time.RFC3339Nano)+"___")
 	//
 	//resource := &model.Resource{
@@ -46,16 +45,18 @@ func main() {
 	//	DominionCode: "",
 	//	Type:         "",
 	//	Func:         "",
-	//	MvcIP:        "172.16.133.249",
+	//	MvcIP:        "192.168.1.15",
 	//	MvcPort:      "80",
 	//	MvcUsername:  "admin",
-	//	MvcPassword:  "DFwl123456",
+	//	MvcPassword:  "abc123abc123",
 	//	MvcChannels:  "",
 	//	Name:         "",
 	//}
+	////
+	//rs ,err := e_onvif.LoadResourceChannels(resource)
 	//
-	//rs ,_ := e_onvif.LoadResourceChannels(resource)
-	//
+	//fmt.Println(rs,err)
+
 	//fmt.Println("通道个数：",rs[0].Token)
 
 	//if len(rs)>0{
@@ -64,8 +65,8 @@ func main() {
 	//	//fmt.Println(rtsp,err)
 	//
 	//	//ptz
-	//	err := e_onvif.ControlPTZ(resource,string(rs[0].Token),"LEFT",0.5)
-	//	fmt.Println(err)
+	//err = e_onvif.ControlPTZ(resource, string(rs[0].Token), "DOWN", 0.5)
+	//fmt.Println(err)
 	//
 	//	time.Sleep(2*time.Second)
 	//	_ = e_onvif.ControlPTZ(resource,string(rs[0].Token),"STOP",0)
