@@ -1,13 +1,17 @@
 package h_toalidatahub
 
 import (
+	"crypto/tls"
+	"dyzs/data-flow/concurrent"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util"
 	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
+	"net/http"
 	"reflect"
 	"time"
 )
@@ -26,7 +30,10 @@ type AliDatahub struct {
 	topicName   string
 	shardId     string
 
-	dh datahub.DataHubApi
+	dh           datahub.DataHubApi
+	recordSchema *datahub.RecordSchema
+
+	executor *concurrent.Executor
 }
 
 func (h *AliDatahub) Init(config interface{}) error {
@@ -36,33 +43,19 @@ func (h *AliDatahub) Init(config interface{}) error {
 	logger.LOG_WARN("toalidatahub_endpoint", context.GetString("toalidatahub_endpoint"))
 	logger.LOG_WARN("toalidatahub_projectName", context.GetString("toalidatahub_projectName"))
 	logger.LOG_WARN("toalidatahub_topicName", context.GetString("toalidatahub_topicName"))
+	logger.LOG_WARN("toalidatahub_shardId", context.GetString("toalidatahub_shardId"))
 	logger.LOG_WARN("------------------------------------------------------")
 	h.accessId = context.GetString("toalidatahub_accessId")
 	h.accessKey = context.GetString("toalidatahub_accessKey")
 	h.endpoint = context.GetString("toalidatahub_endpoint")
 	h.projectName = context.GetString("toalidatahub_projectName")
 	h.topicName = context.GetString("toalidatahub_topicName")
+	h.shardId = context.GetString("toalidatahub_shardId")
 	h.dh = datahub.New(h.accessId, h.accessKey, h.endpoint)
+	h.executor = concurrent.NewExecutor(20)
 
-	err := h.createProject()
-	if err == nil {
-		err = h.createTupleTopic()
-	}
-	if err == nil {
-		ls, err := h.dh.ListShard(h.projectName, h.topicName)
-		if err != nil {
-			logger.LOG_WARN("get shard list failed,", err)
-			cerr := h.createTupleTopic()
-			if cerr != nil {
-				logger.LOG_WARN("创建topic异常：", cerr)
-				return cerr
-			}
-		}
-		if len(ls.Shards) == 0 {
-			return errors.New("shardId empty")
-		}
-		h.shardId = ls.Shards[0].ShardId
-	}
+	h.initDatahubApi()
+	err := h.initTupleTopic()
 	if err != nil {
 		logger.LOG_WARN("上云初始化失败，", err)
 	}
@@ -77,92 +70,89 @@ func (h *AliDatahub) Handle(data interface{}, next func(interface{}) error) erro
 	if len(wraps) == 0 {
 		return nil
 	}
+
+	batchs := make([][]datahub.IRecord, 0)
+	records := make([]datahub.IRecord, 0)
+	now := time.Now().UnixNano() / 1e6
 	for _, wrap := range wraps {
 		bytes, err := wrap.BuildToJson()
 		if err != nil {
 			logger.LOG_WARN("序列化异常：", err)
 			continue
 		}
-		h.putTupleData(string(bytes))
+		record := datahub.NewTupleRecord(h.recordSchema, now)
+		record.ShardId = h.shardId
+		record.SetValueByName("datatype", datahub.String(wrap.DataType))
+		record.SetValueByName("data", datahub.String(bytes))
+		records = append(records, record)
+		if len(records) >= 20 {
+			batchs = append(batchs, records)
+			records = make([]datahub.IRecord, 0)
+		}
+	}
+	if len(records) > 0 {
+		batchs = append(batchs, records)
+	}
+	if len(batchs) == 0 {
+		return nil
+	}
+
+	tasks := make([]func(), 0)
+	for _, batch := range batchs {
+		b := batch
+		tasks = append(tasks, func() {
+			err := util.Retry(func() error {
+				result, err := h.dh.PutRecords(h.projectName, h.topicName, b)
+				if err != nil {
+					return err
+				}
+				logger.LOG_INFO("put successful num is %d, put records failed num is %d\n", len(records)-result.FailedRecordCount, result.FailedRecordCount)
+				return nil
+			}, 3, 3*time.Second)
+			if err != nil {
+				logger.LOG_WARN("数据推送datahub失败：", err)
+			}
+		})
+	}
+
+	err := h.executor.SubmitSyncBatch(tasks)
+	if err != nil {
+		logger.LOG_ERROR("上传ali datahub error：", err)
+		return errors.New("上传ali datahub error：" + err.Error())
 	}
 	return nil
 }
 
-func (h *AliDatahub) putTupleData(data string) {
+func (h *AliDatahub) initDatahubApi() {
+	account := datahub.NewAliyunAccount(h.accessId, h.accessKey)
+	config := &datahub.Config{
+		EnableBinary: false,
+		HttpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		},
+	}
+	h.dh = datahub.NewClientWithConfig(h.endpoint, config, account)
+}
+
+func (h *AliDatahub) initTupleTopic() error {
 	topic, err := h.dh.GetTopic(h.projectName, h.topicName)
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	records := make([]datahub.IRecord, 3)
-	record := datahub.NewTupleRecord(topic.RecordSchema, 0)
-	record.ShardId = h.shardId
-	record.SetValueByName("data", data)
-	records = append(records, record)
-
-	maxReTry := 3
-	retryNum := 0
-	for retryNum < maxReTry {
-		result, err := h.dh.PutRecords(h.projectName, h.topicName, records)
+		//创建topic
+		recordSchema := datahub.NewRecordSchema()
+		recordSchema.AddField(datahub.Field{Name: "type", Type: datahub.STRING, AllowNull: false}).
+			AddField(datahub.Field{Name: "data", Type: datahub.STRING, AllowNull: false})
+		if err := h.dh.CreateTupleTopic(h.projectName, h.topicName, h.topicName, 5, 7, recordSchema); err != nil {
+			return err
+		}
+		logger.LOG_WARN("create topic successful,", h.projectName, ":", h.topicName)
+		topic, err = h.dh.GetTopic(h.projectName, h.topicName)
 		if err != nil {
-			if _, ok := err.(*datahub.LimitExceededError); ok {
-				logger.LOG_WARN("maybe qps exceed limit,retry")
-				retryNum++
-				time.Sleep(5 * time.Second)
-				continue
-			} else {
-				logger.LOG_WARN("put record failed,", err)
-				return
-			}
-		}
-		logger.LOG_INFO("put successful num is %d, put records failed num is %d\n", len(records)-result.FailedRecordCount, result.FailedRecordCount)
-		for _, v := range result.FailedRecords {
-			logger.LOG_ERROR(v)
-		}
-		break
-	}
-	if retryNum >= maxReTry {
-		logger.LOG_WARN("put records failed ")
-	}
-}
-
-func (h *AliDatahub) createProject() (err error) {
-	if err = h.dh.CreateProject(h.projectName, "project comment"); err != nil {
-		if _, ok := err.(*datahub.InvalidParameterError); ok {
-			logger.LOG_WARN("invalid parameter,please check your input parameter")
-		} else if _, ok := err.(*datahub.ResourceExistError); ok {
-			logger.LOG_WARN("project already exists")
-		} else if _, ok := err.(*datahub.AuthorizationFailedError); ok {
-			logger.LOG_WARN("accessId or accessKey err,please check your accessId and accessKey")
-		} else if _, ok := err.(*datahub.LimitExceededError); ok {
-			logger.LOG_WARN("limit exceed, so retry")
-			for i := 0; i < 5; i++ {
-				// wait 5 seconds
-				time.Sleep(5 * time.Second)
-				if err = h.dh.CreateProject(h.projectName, "project comment"); err != nil {
-					logger.LOG_WARN("create project failed:", err)
-				} else {
-					break
-				}
-			}
-		} else {
-			logger.LOG_WARN("unknown error:", err)
+			return errors.New("获取topic失败:" + err.Error())
 		}
 	}
-	return err
-}
-
-func (h *AliDatahub) createTupleTopic() error {
-	recordSchema := datahub.NewRecordSchema()
-	recordSchema.AddField(datahub.Field{Name: "bigint_field", Type: datahub.BIGINT, AllowNull: true}).
-		AddField(datahub.Field{Name: "timestamp_field", Type: datahub.TIMESTAMP, AllowNull: false}).
-		AddField(datahub.Field{Name: "string_field", Type: datahub.STRING}).
-		AddField(datahub.Field{Name: "double_field", Type: datahub.DOUBLE}).
-		AddField(datahub.Field{Name: "boolean_field", Type: datahub.BOOLEAN})
-	if err := h.dh.CreateTupleTopic(h.projectName, h.topicName, h.topicName, 5, 7, recordSchema); err != nil {
-		return err
-	}
-	logger.LOG_WARN("create topic successful,", h.projectName, ":", h.topicName)
+	h.recordSchema = topic.RecordSchema
 	return nil
 }
 

@@ -6,6 +6,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Shopify/sarama v1.24.1
 	github.com/aliyun/aliyun-datahub-sdk-go v0.1.3 // indirect
+	github.com/aliyun/aliyun-oss-go-sdk v2.1.4+incompatible
 	github.com/astaxie/beego v1.12.0 // indirect
 	github.com/beevik/etree v1.1.0 // indirect
 	github.com/bsm/sarama-cluster v2.1.15+incompatible

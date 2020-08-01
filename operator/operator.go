@@ -12,5 +12,6 @@ import (
 	_ "dyzs/data-flow/operator/h_downloadimage"
 	_ "dyzs/data-flow/operator/h_kafkamsgto1400"
 	_ "dyzs/data-flow/operator/h_kafkaproducer"
+	_ "dyzs/data-flow/operator/h_toalioss"
 	_ "dyzs/data-flow/operator/h_uploadimage"
 )
