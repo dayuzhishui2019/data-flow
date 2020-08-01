@@ -18,6 +18,7 @@ var TASK_FLOW = map[string][]string{
 	"1":              []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg", "kafkaproducer"},
 	"1400client":     []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
 	"2":              []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "1400client", "kafkaproducer"},
+	"sendtoalicloud":     []string{"kafkaconsumer", "kafkamsgto1400", "1400filter", "downloadimage", "toalidatahub"},
 	"statistics":     []string{"kafkaconsumer", "1400digesttoredis"},
 	"1400servertest": []string{"1400server", "1400filter", "uploadimage", "1400tokafkamsg"},
 	//video
