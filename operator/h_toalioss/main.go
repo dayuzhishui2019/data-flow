@@ -10,6 +10,7 @@ import (
 	"dyzs/data-flow/model/gat1400/base"
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
+	"dyzs/data-flow/util/aes"
 	"dyzs/data-flow/util/base64"
 	"dyzs/data-flow/util/uuid"
 	"errors"
@@ -35,6 +36,8 @@ type OssUploader struct {
 	endpoint   string
 	bucketName string
 
+	aesKey []byte
+
 	ossClient *oss.Client
 	bucket    *oss.Bucket
 
@@ -50,11 +53,13 @@ func (h *OssUploader) Init(config interface{}) error {
 	logger.LOG_WARN("toalioss_accessKey", context.GetString("toalioss_accessKey"))
 	logger.LOG_WARN("toalioss_endpoint", context.GetString("toalioss_endpoint"))
 	logger.LOG_WARN("toalioss_bucketName", context.GetString("toalioss_bucketName"))
+	logger.LOG_WARN("toalioss_aeskey", context.GetString("toalioss_aeskey"))
 	logger.LOG_WARN("------------------------------------------------------")
 	h.accessId = context.GetString("toalioss_accessId")
 	h.accessKey = context.GetString("toalioss_accessKey")
 	h.endpoint = context.GetString("toalioss_endpoint")
 	h.bucketName = context.GetString("toalioss_bucketName")
+	h.aesKey = []byte(context.GetString("toalioss_aeskey"))
 	h.executor = concurrent.NewExecutor(capacity)
 
 	return h.initOssClient()
@@ -134,8 +139,18 @@ func (iu *OssUploader) uploadImage(image *base.SubImageInfo) error {
 		logger.LOG_INFO("图片base64解码失败")
 		return errors.New("图片base64解码失败")
 	}
+	//aes加密
+	if len(iu.aesKey) > 0 {
+		logger.LOG_INFO("oss-aes加密前长度：", len(imageBytes))
+		imageBytes, err = aes.EncryptAES(imageBytes, iu.aesKey)
+		if err != nil {
+			return errors.New("oss-aes加密失败，" + err.Error() + ",aes-key:" + string(iu.aesKey))
+		}
+		logger.LOG_INFO("oss-aes加密后长度：", len(imageBytes))
+	}
+
 	err = util.Retry(func() error {
-		objName := "alioss/dayu/gat1400/" + strings.ReplaceAll(uuid.UUID(), "-", "")
+		objName := "alioss/huihai/gat1400/" + strings.ReplaceAll(uuid.UUID(), "-", "")
 		start := time.Now()
 		err := iu.bucket.PutObject(objName, bytes.NewReader(imageBytes))
 		logger.LOG_WARN("oss upload 耗时：" + time.Since(start).String())

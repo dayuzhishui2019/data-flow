@@ -8,6 +8,7 @@ import (
 	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
+	"dyzs/data-flow/util/aes"
 	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -30,6 +31,8 @@ type AliDatahub struct {
 	topicName   string
 	shardId     string
 
+	aesKey []byte
+
 	dh           datahub.DataHubApi
 	recordSchema *datahub.RecordSchema
 
@@ -44,6 +47,7 @@ func (h *AliDatahub) Init(config interface{}) error {
 	logger.LOG_WARN("toalidatahub_projectName", context.GetString("toalidatahub_projectName"))
 	logger.LOG_WARN("toalidatahub_topicName", context.GetString("toalidatahub_topicName"))
 	logger.LOG_WARN("toalidatahub_shardId", context.GetString("toalidatahub_shardId"))
+	logger.LOG_WARN("toalidatahub_aeskey", context.GetString("toalidatahub_aeskey"))
 	logger.LOG_WARN("------------------------------------------------------")
 	h.accessId = context.GetString("toalidatahub_accessId")
 	h.accessKey = context.GetString("toalidatahub_accessKey")
@@ -51,6 +55,7 @@ func (h *AliDatahub) Init(config interface{}) error {
 	h.projectName = context.GetString("toalidatahub_projectName")
 	h.topicName = context.GetString("toalidatahub_topicName")
 	h.shardId = context.GetString("toalidatahub_shardId")
+	h.aesKey = []byte(context.GetString("toalidatahub_aeskey"))
 	h.dh = datahub.New(h.accessId, h.accessKey, h.endpoint)
 	h.executor = concurrent.NewExecutor(20)
 
@@ -82,7 +87,16 @@ func (h *AliDatahub) Handle(data interface{}, next func(interface{}) error) erro
 		}
 		record := datahub.NewTupleRecord(h.recordSchema, now)
 		record.ShardId = h.shardId
-		record.SetValueByName("datatype", datahub.String(wrap.DataType))
+		record.SetValueByName("type", datahub.String(wrap.DataType))
+		//aes加密
+		if len(h.aesKey) > 0 {
+			logger.LOG_INFO("datahub-aes加密前长度：", len(bytes))
+			bytes, err = aes.EncryptAES(bytes, h.aesKey)
+			if err != nil {
+				return errors.New("datahub-aes加密失败，" + err.Error() + ",aes-key:" + string(h.aesKey))
+			}
+			logger.LOG_INFO("datahub-aes加密后长度：", len(bytes))
+		}
 		record.SetValueByName("data", datahub.String(bytes))
 		records = append(records, record)
 		if len(records) >= 20 {
