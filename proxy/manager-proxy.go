@@ -13,6 +13,8 @@ const (
 	URL_PREFIX = "/mapi"
 )
 
+var serverIns *gin.Engine
+
 func StartManagerProxy(port string) {
 	if port == "" {
 		port = "7777"
@@ -26,7 +28,9 @@ func StartManagerProxy(port string) {
 	router.Handle(http.MethodPost, "/revokeResource", RevokeResource)
 	go server.Run(":" + port)
 	//go server.Run(":7777")
+	serverIns = server
 }
+
 
 func ChangeLogLevel(ctx *gin.Context) {
 	level := ctx.Query("level")

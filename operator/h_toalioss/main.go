@@ -7,11 +7,9 @@ import (
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model/gat1400"
-	"dyzs/data-flow/model/gat1400/base"
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
 	"dyzs/data-flow/util/aes"
-	"dyzs/data-flow/util/base64"
 	"dyzs/data-flow/util/uuid"
 	"errors"
 	"fmt"
@@ -102,71 +100,65 @@ func (iu *OssUploader) Handle(data interface{}, next func(interface{}) error) er
 	tasks := make([]func(), 0)
 	var uploadErr error
 	var lock sync.Mutex
+	paths := make([][]string, 0)
+
 	for _, wrap := range wraps {
-		for _, item := range wrap.GetSubImageInfos() {
-			func(img *base.SubImageInfo) {
-				tasks = append(tasks, func() {
-					e := iu.uploadImage(img)
-					if e != nil {
-						lock.Lock()
-						uploadErr = e
-						lock.Unlock()
-					}
-				})
-			}(item)
-		}
+		tasks = append(tasks, func() {
+			path, e := iu.uploadOss(wrap)
+			if e != nil {
+				uploadErr = e
+			} else {
+				lock.Lock()
+				paths = append(paths, path)
+				lock.Unlock()
+			}
+		})
 	}
 	err := iu.executor.SubmitSyncBatch(tasks)
 	if err != nil {
-		logger.LOG_ERROR("上传图片失败：", err)
-		return errors.New("上传图片失败：" + err.Error())
+		logger.LOG_ERROR("上传文件oss失败：", err)
+		return errors.New("上传文件oss失败：" + err.Error())
 	}
 	if uploadErr != nil {
-		logger.LOG_ERROR("上传图片失败：", uploadErr)
-		return errors.New("上传图片失败：" + uploadErr.Error())
+		logger.LOG_ERROR("上传文件oss失败：", uploadErr)
+		return errors.New("上传文件oss失败：" + uploadErr.Error())
 	}
-	return next(wraps)
+	return next(paths)
 }
 
-func (iu *OssUploader) uploadImage(image *base.SubImageInfo) error {
-	imageData := image.Data
-	if imageData == "" {
-		logger.LOG_INFO("图片无base64数据")
-		return nil
-	}
-	imageBytes, err := base64.Decode(imageData)
+func (iu *OssUploader) uploadOss(wrap *gat1400.Gat1400Wrap) (res []string, err error) {
+	imageBytes, err := wrap.BuildToJson()
 	if err != nil {
-		logger.LOG_INFO("图片base64解码失败")
-		return errors.New("图片base64解码失败")
+		logger.LOG_INFO("数据json序列化失败", err)
+		return nil, errors.New("数据json序列化失败")
 	}
 	//aes加密
+	path := "alioss/huihai/gat1400/" + strings.ReplaceAll(uuid.UUID(), "-", "")
 	if len(iu.aesKey) > 0 {
 		logger.LOG_INFO("oss-aes加密前长度：", len(imageBytes))
 		imageBytes, err = aes.EncryptAES(imageBytes, iu.aesKey)
 		if err != nil {
-			return errors.New("oss-aes加密失败，" + err.Error() + ",aes-key:" + string(iu.aesKey))
+			return nil, errors.New("oss-aes加密失败，" + err.Error() + ",aes-key:" + string(iu.aesKey))
 		}
 		logger.LOG_INFO("oss-aes加密后长度：", len(imageBytes))
 	}
 
 	err = util.Retry(func() error {
-		objName := "alioss/huihai/gat1400/" + strings.ReplaceAll(uuid.UUID(), "-", "")
 		start := time.Now()
-		err := iu.bucket.PutObject(objName, bytes.NewReader(imageBytes))
+		err := iu.bucket.PutObject(path, bytes.NewReader(imageBytes))
 		logger.LOG_WARN("oss upload 耗时：" + time.Since(start).String())
 		if err != nil {
 			return err
 		}
-		logger.LOG_INFO("oss upload success：", objName)
-		image.StoragePath = objName
-		image.Data = ""
+		logger.LOG_INFO("oss upload success：", path)
 		return nil
 	}, 3, 100*time.Millisecond)
 
 	if err != nil {
-		logger.LOG_WARN("上传图片失败", err)
+		logger.LOG_WARN("上传文件失败", err)
+		return nil, err
 	}
-	return err
+	return []string{wrap.DataType, path}, err
 }
 
 func (iu *OssUploader) Close() error {

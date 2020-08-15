@@ -22,7 +22,7 @@ var _logLevelMap = map[string]log.Level{
 
 func Init() {
 
-	level := log.DebugLevel
+	level := log.InfoLevel
 	configLogLevel := viper.GetString("$logLevel")
 	if configLogLevel != "" {
 		l, ok := _logLevelMap[strings.ToLower(configLogLevel)]

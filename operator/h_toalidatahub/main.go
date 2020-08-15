@@ -5,10 +5,8 @@ import (
 	"dyzs/data-flow/concurrent"
 	"dyzs/data-flow/context"
 	"dyzs/data-flow/logger"
-	"dyzs/data-flow/model/gat1400"
 	"dyzs/data-flow/stream"
 	"dyzs/data-flow/util"
-	"dyzs/data-flow/util/aes"
 	"errors"
 	"fmt"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
@@ -68,36 +66,25 @@ func (h *AliDatahub) Init(config interface{}) error {
 }
 
 func (h *AliDatahub) Handle(data interface{}, next func(interface{}) error) error {
-	wraps, ok := data.([]*gat1400.Gat1400Wrap)
+	paths, ok := data.([][]string)
 	if !ok {
-		return errors.New(fmt.Sprintf("Handle [kafkamsgto1400] 数据格式错误，need []*kafka.KafkaMessage , get %T", reflect.TypeOf(data)))
+		return errors.New(fmt.Sprintf("Handle [toalidatahub] 数据格式错误，need [][]string , get %T", reflect.TypeOf(data)))
 	}
-	if len(wraps) == 0 {
+	if len(paths) == 0 {
 		return nil
 	}
 
 	batchs := make([][]datahub.IRecord, 0)
 	records := make([]datahub.IRecord, 0)
 	now := time.Now().UnixNano() / 1e6
-	for _, wrap := range wraps {
-		bytes, err := wrap.BuildToJson()
-		if err != nil {
-			logger.LOG_WARN("序列化异常：", err)
+	for _, path := range paths {
+		if len(path) != 2 {
 			continue
 		}
 		record := datahub.NewTupleRecord(h.recordSchema, now)
 		record.ShardId = h.shardId
-		record.SetValueByName("type", datahub.String(wrap.DataType))
-		//aes加密
-		if len(h.aesKey) > 0 {
-			logger.LOG_INFO("datahub-aes加密前长度：", len(bytes))
-			bytes, err = aes.EncryptAES(bytes, h.aesKey)
-			if err != nil {
-				return errors.New("datahub-aes加密失败，" + err.Error() + ",aes-key:" + string(h.aesKey))
-			}
-			logger.LOG_INFO("datahub-aes加密后长度：", len(bytes))
-		}
-		record.SetValueByName("data", datahub.String(bytes))
+		record.SetValueByName("type", datahub.String(path[0]))
+		record.SetValueByName("path", datahub.String(path[1]))
 		records = append(records, record)
 		if len(records) >= 20 {
 			batchs = append(batchs, records)
@@ -120,7 +107,7 @@ func (h *AliDatahub) Handle(data interface{}, next func(interface{}) error) erro
 				if err != nil {
 					return err
 				}
-				logger.LOG_INFO("put successful num is %d, put records failed num is %d\n", len(records)-result.FailedRecordCount, result.FailedRecordCount)
+				logger.LOG_INFO(fmt.Sprintf("put success %d, put fail %d\n", len(records)-result.FailedRecordCount, result.FailedRecordCount))
 				return nil
 			}, 3, 3*time.Second)
 			if err != nil {
@@ -155,8 +142,7 @@ func (h *AliDatahub) initTupleTopic() error {
 	if err != nil {
 		//创建topic
 		recordSchema := datahub.NewRecordSchema()
-		recordSchema.AddField(datahub.Field{Name: "type", Type: datahub.STRING, AllowNull: false}).
-			AddField(datahub.Field{Name: "data", Type: datahub.STRING, AllowNull: false})
+		recordSchema.AddField(datahub.Field{Name: "type", Type: datahub.STRING, AllowNull: false}).AddField(datahub.Field{Name: "path", Type: datahub.STRING, AllowNull: false})
 		if err := h.dh.CreateTupleTopic(h.projectName, h.topicName, h.topicName, 5, 7, recordSchema); err != nil {
 			return err
 		}

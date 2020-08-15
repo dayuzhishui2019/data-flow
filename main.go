@@ -8,9 +8,12 @@ import (
 	_ "dyzs/data-flow/operator"
 	"dyzs/data-flow/proxy"
 	"dyzs/data-flow/stream"
+	"dyzs/data-flow/util/aes"
 	"fmt"
+	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/json-iterator/go/extra"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -33,52 +36,7 @@ var TASK_FLOW = map[string][]string{
 }
 
 func main() {
-	//res,err := http.Get("https://www.sina.com")
-	//if err!=nil{
-	//	fmt.Println(err)
-	//	return
-	//}
-	//body,_ := ioutil.ReadAll(res.Body)
-	//fmt.Println(string(body))
-
-	//fmt.Println("___"+time.Now().UTC().Format(time.RFC3339Nano)+"___")
-	//
-	//resource := &model.Resource{
-	//	ID:           "1232131312",
-	//	GbID:         "",
-	//	ParentId:     "",
-	//	AreaNumber:   "",
-	//	DominionCode: "",
-	//	Type:         "",
-	//	Func:         "",
-	//	MvcIP:        "192.168.1.15",
-	//	MvcPort:      "80",
-	//	MvcUsername:  "admin",
-	//	MvcPassword:  "abc123abc123",
-	//	MvcChannels:  "",
-	//	Name:         "",
-	//}
-	////
-	//rs ,err := e_onvif.LoadResourceChannels(resource)
-	//
-	//fmt.Println(rs,err)
-
-	//fmt.Println("通道个数：",rs[0].Token)
-
-	//if len(rs)>0{
-	//	//rtsp
-	//	//rtsp,err := e_onvif.LoadChannelRTSP(resource,string(rs[0].Token))
-	//	//fmt.Println(rtsp,err)
-	//
-	//	//ptz
-	//err = e_onvif.ControlPTZ(resource, string(rs[0].Token), "DOWN", 0.5)
-	//fmt.Println(err)
-	//
-	//	time.Sleep(2*time.Second)
-	//	_ = e_onvif.ControlPTZ(resource,string(rs[0].Token),"STOP",0)
-	//}
-
-	//return
+	testOnvif()
 
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))
@@ -154,50 +112,123 @@ func init1400server() {
 }
 
 
+func testOnvif(){
 
-func test(){
+	context.Set("$task", &model.Task{
+		AccessType: "onvif",
+	})
+
+	resource := &model.Resource{
+		ID:           "34020000001320000001",
+		GbID:         "34020000001320000001",
+		ParentId:     "",
+		AreaNumber:   "",
+		DominionCode: "",
+		Type:         "",
+		Func:         "",
+		MvcIP:        "192.168.1.15",
+		MvcPort:      "80",
+		MvcUsername:  "admin",
+		MvcPassword:  "abc123abc123",
+		MvcChannels:  "",
+		Name:         "",
+	}
+	context.AssignResources([]*model.Resource{resource})
+
+
+	//
+	//rs ,err := e_onvif.LoadResourceChannels(resource)
+	//
+	//fmt.Println(rs,err)
+	//
+	//fmt.Println("通道个数：",rs[0].Token)
+	//
+	//if len(rs)>0{
+	//	//rtsp
+	//	//rtsp,err := e_onvif.LoadChannelRTSP(resource,string(rs[0].Token))
+	//	//fmt.Println(rtsp,err)
+	//	//ptz
+	//err = e_onvif.ControlPTZ(resource, string(rs[0].Token), "DOWN", 0.5)
+	//fmt.Println(err)
+	//
+	//	time.Sleep(2*time.Second)
+	//	_ = e_onvif.ControlPTZ(resource,string(rs[0].Token),"STOP",0)
+	//}
+
+	return
+}
+
+
+func testCloud(){
+
+	aesKey := "aHVpaGFpdG9hbGlj"
+	//bytes,_ := ioutil.ReadFile("./oss.data")
+	////fmt.Println("解密前：",string(bytes))
+	//ubytes,err := aes.DecryptAES(bytes,[]byte(aesKey))
+	//if err!=nil{
+	//	fmt.Println("揭秘四百：",err)
+	//}
+	//gat := &gat1400.Gat1400Wrap{}
+	//_ = jsoniter.Unmarshal(ubytes,gat)
+	//fmt.Println("解密后:",string(ubytes))
+	//
+	//return
+
+	//		//fmt.Println(data.Values)
+
 	//datahub
+	//
+	account := datahub.NewAliyunAccount("tSNTJeWLf0ebHNAm", "GMubqWiPxf4Pq4LMTT39SPnkpPWmeG")
+	config := &datahub.Config{
+		EnableBinary: false,
+		HttpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		},
+	}
+	dh := datahub.NewClientWithConfig("https://101.89.99.42:443", config, account)
 
-	//account := datahub.NewAliyunAccount("tSNTJeWLf0ebHNAm", "GMubqWiPxf4Pq4LMTT39SPnkpPWmeG")
-	//config := &datahub.Config{
-	//	EnableBinary: false,
-	//	HttpClient: &http.Client{
-	//		Transport: &http.Transport{
-	//			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//		},
-	//	},
-	//}
-	//dh := datahub.NewClientWithConfig("https://101.89.99.42:443", config, account)
-	//
-	//topic,err := dh.GetTopic("sj_dwly_sjjr","huihai1400")
-	//if err!=nil{
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//gr,err := dh.GetCursor("sj_dwly_sjjr","huihai1400","1",datahub.LATEST)
-	//if err!=nil{
-	//	fmt.Println(err)
-	//	return
-	//}
-	//ggr,err  := dh.GetTupleRecords("sj_dwly_sjjr","huihai1400","1",gr.Cursor,1,topic.RecordSchema)
-	//if err!=nil{
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//for _,record:=range ggr.Records{
-	//	data,ok := record.(*datahub.TupleRecord)
-	//	if ok{
-	//		fmt.Println(data.Values)
-	//	}else{
-	//		fmt.Println("no tuple")
-	//	}
-	//}
+	topic,err := dh.GetTopic("sj_dwly_sjjr","huihaialiyun1400")
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+
+	gr,err := dh.GetCursor("sj_dwly_sjjr","huihaialiyun1400","1",datahub.LATEST)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+	ggr,err  := dh.GetTupleRecords("sj_dwly_sjjr","huihaialiyun1400","1",gr.Cursor,1,topic.RecordSchema)
+	if err!=nil{
+		fmt.Println(err)
+		return
+	}
+
+	filepath := ""
+	for _,record:=range ggr.Records{
+		data,ok := record.(*datahub.TupleRecord)
+		if ok{
+			//bytes := []byte(data.GetValueByName("data").String())
+			//_ = ioutil.WriteFile("./test.dat",bytes,0666)
+			//fmt.Println("解密前：",string(bytes))
+			//ubytes,err := aes.DecryptAES(bytes,[]byte(aesKey))
+			//if err!=nil{
+			//	fmt.Println("揭秘四百：",err)
+			//}
+			//fmt.Println("解密后:",string(ubytes))
+			fmt.Println("type:",data.GetValueByName("type").String())
+			filepath = data.GetValueByName("path").String()
+			fmt.Println("path:",data.GetValueByName("path").String())
+		}else{
+			fmt.Println("no tuple")
+		}
+	}
 
 
 	//oss
-	filepath := "alioss/dayu/gat1400/b94afa60e19e4ea9942f00100fe49dbc"
+	//filepath := "alioss/huihai/gat1400/e5688f50cdf64f31990925cc72c2c980"
 
 	client, err := oss.New("https://101.89.99.157:443", "tSNTJeWLf0ebHNAm", "GMubqWiPxf4Pq4LMTT39SPnkpPWmeG", oss.HTTPClient(&http.Client{Transport: newTransport()}))
 	if err != nil {
@@ -210,7 +241,11 @@ func test(){
 		fmt.Println(err)
 		return
 	}
-	err = bucket.GetObjectToFile(filepath,"./test.jpg")
+	body,err := bucket.GetObject(filepath)
+	bytes,_ := ioutil.ReadAll(body)
+	ubytes,err := aes.DecryptAES(bytes,[]byte(aesKey))
+	//_ = jsoniter.Unmarshal(ubytes,gat)
+	fmt.Println("解密后:",string(ubytes))
 	if err != nil {
 		fmt.Println(err)
 		return

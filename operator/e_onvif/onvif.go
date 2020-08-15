@@ -1,10 +1,10 @@
 package e_onvif
 
 import (
+	"dyzs/data-flow/logger"
 	"dyzs/data-flow/model"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"github.com/yakovlevdmv/goonvif"
 	"github.com/yakovlevdmv/goonvif/Media"
 	"github.com/yakovlevdmv/goonvif/PTZ"
@@ -17,7 +17,7 @@ import (
 
 //获取通道列表
 func LoadResourceChannels(resource *model.Resource) (channels []onvif.Profile, err error) {
-	fmt.Println(resource.MvcIP, ",", resource.MvcPort, ",", resource.MvcUsername, ",", resource.MvcPassword)
+	logger.LOG_INFO("获取设备通道：", resource.MvcIP, ",", resource.MvcPort, ",", resource.MvcUsername, ",", resource.MvcPassword)
 	if resource.MvcIP == "" || resource.MvcPort == "" || resource.MvcUsername == "" || resource.MvcPassword == "" {
 		return nil, errors.New("设备信息缺失")
 	}
@@ -127,7 +127,10 @@ func ControlPTZ(resource *model.Resource, channelToken string, cmd string, speed
 			Timeout: "PT00H00M10S",
 		})
 		data, _ := ioutil.ReadAll(httpres.Body)
-		fmt.Println(string(data),err)
+
+		if logger.IsDebug() {
+			logger.LOG_DEBUG("onvif云台请求响应：", string(data), err)
+		}
 	}
 	return err
 }
@@ -155,11 +158,12 @@ func decodeSoap(res *http.Response, ptr interface{}) error {
 		EnvelopeBody: EnvelopeBody{},
 	}
 	data, err := ioutil.ReadAll(res.Body)
-	fmt.Println(string(data))
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(data))
+	if logger.IsDebug() {
+		logger.LOG_DEBUG("onvif请求响应：", string(data))
+	}
 	err = xml.Unmarshal(data, evp)
 	if err != nil {
 		return err
