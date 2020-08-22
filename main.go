@@ -36,7 +36,7 @@ var TASK_FLOW = map[string][]string{
 }
 
 func main() {
-	testOnvif()
+	//testOnvif()
 
 	context.Set("$manage_port", os.Getenv("MANAGE_PORT"))
 	context.Set("$host", os.Getenv("HOST"))

@@ -131,7 +131,10 @@ func (ce *OnvifEmitter) OpenStream(forwardParam *videocmd.CmdOpenStream) (result
 }
 
 func (ce *OnvifEmitter) CloseStream(param *videocmd.CmdCloseStream) (result interface{}, err error) {
-	return param, nil
+	return map[string]interface{}{
+		"Cmd":   "CloseStream",
+		"Param": param,
+	}, nil
 }
 
 func (ce *OnvifEmitter) PTZ(ptzParam *videocmd.CmdPTZ) (result interface{}, err error) {
@@ -144,7 +147,7 @@ func (ce *OnvifEmitter) PTZ(ptzParam *videocmd.CmdPTZ) (result interface{}, err 
 		return
 	}
 	//err := ControlPTZ(resource, channel, ptzControl.CMD, ptzControl.Speed)
-	err = ControlPTZ(resource, channel, ptzParam.Ptz, 1.0)
+	err = ControlPTZ(resource, channel, ptzParam.Direction(), ptzParam.GetSpeed())
 	if err != nil {
 		logger.LOG_WARN("云台控制异常：", err)
 		return nil, err

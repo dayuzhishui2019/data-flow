@@ -31,14 +31,48 @@ type CmdOpenStream struct {
 type CmdCloseStream struct {
 	DeviceId  string `json:"DeviceId"`
 	Channel   string `json:"Channel"`
-	SessionId int    `json:"Type"`
+	SessionId int    `json:"SessionId"`
 }
 
 //云台控制
 type CmdPTZ struct {
 	DeviceId string `json:"DeviceId"`
 	Channel  string `json:"Channel"`
-	Ptz      string `json:"Ptz"`
+	//Ptz      string `json:"Ptz"`
+	Zoom      int `json:"Zoom"`      //0-stop 1-small 2-big
+	RightLeft int `json:"RightLeft"` //0-stop 1-right 2-left
+	DownUp    int `json:"DownUp"`    //0-stop 1-down 2-up
+	Speed     int `json:"Speed"`     //0-255
+}
+
+func (ptz *CmdPTZ) Direction() string {
+	if ptz.Zoom == 0 && ptz.RightLeft == 0 && ptz.DownUp == 0 {
+		return "STOP"
+	} else if ptz.RightLeft == 2 && ptz.DownUp == 0 {
+		return "LEFT"
+	} else if ptz.RightLeft == 1 && ptz.DownUp == 0 {
+		return "RIGHT"
+	} else if ptz.RightLeft == 0 && ptz.DownUp == 2 {
+		return "UP"
+	} else if ptz.RightLeft == 0 && ptz.DownUp == 1 {
+		return "DOWN"
+	} else if ptz.RightLeft == 2 && ptz.DownUp == 2 {
+		return "LEFTUP"
+	} else if ptz.RightLeft == 1 && ptz.DownUp == 2 {
+		return "RIGHTUP"
+	} else if ptz.RightLeft == 2 && ptz.DownUp == 1 {
+		return "LEFTDOWN"
+	} else if ptz.RightLeft == 1 && ptz.DownUp == 1 {
+		return "RIGHTDOWN"
+	} else if ptz.Zoom == 1 {
+		return "ZOOMIN"
+	} else if ptz.Zoom == 2 {
+		return "ZOOMOUT"
+	}
+	return "STOP"
+}
+func (ptz *CmdPTZ) GetSpeed() float64 {
+	return float64(ptz.Speed) / 255.0
 }
 
 //录像查询
@@ -51,7 +85,7 @@ type CmdHistoryVideo struct {
 
 type ParamReceiveStream struct {
 	RecvProto string `json:"RecvProto"`
-	Istcp bool `json:"Istcp"`
+	Istcp     bool   `json:"Istcp"`
 	// gb28181 国标必填参数，非国标可不给该字段
 	IsActive bool `json:"IsActive"`
 	// rtsp  rtsp必填参数，非rtsp可不给该字段

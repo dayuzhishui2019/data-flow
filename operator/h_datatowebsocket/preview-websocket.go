@@ -38,8 +38,8 @@ type WsSendMessage struct {
 }
 
 type WsSubject struct {
-	Subscribe   []string `json:"subscribe"`
-	UnSubscribe []string `json:"unSubscribe"`
+	Subscribe   string `json:"subscribe"`
+	UnSubscribe string `json:"unSubscribe"`
 }
 
 type PreviewWebsocket struct {
@@ -135,7 +135,7 @@ LOOP:
 			if len(data.Subscribe) == 0 && len(data.UnSubscribe) == 0 {
 				continue
 			}
-			pw.handle(data.Subscribe, data.UnSubscribe)
+			pw.handle([]string{data.Subscribe}, []string{data.UnSubscribe})
 		}
 	}
 }
